@@ -14,4 +14,5 @@ fn main() {
     std::fs::create_dir_all(&dist).ok();
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=../../web/dist");
+    println!("cargo:rerun-if-changed=../../skills");
 }

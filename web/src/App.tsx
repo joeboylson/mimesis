@@ -4,6 +4,8 @@ import { ItemPage } from '@/components/item-page'
 import { ModeToggle } from '@/components/mode-toggle'
 import { ReviewPage } from '@/components/review-page'
 import { ReviewsPage } from '@/components/reviews-page'
+import { SkillsPage } from '@/components/skills-page'
+import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useReview, useVersion } from '@/hooks/use-ochre'
@@ -35,6 +37,14 @@ export default function App() {
               / Review {route.id}
             </button>
           )}
+          <nav className="ml-4 flex gap-1">
+            <Button variant={route.page === 'skills' ? 'ghost' : 'secondary'} size="sm" onClick={() => go('#/')}>
+              Reviews
+            </Button>
+            <Button variant={route.page === 'skills' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/skills')}>
+              Skills
+            </Button>
+          </nav>
           <div className="ml-auto flex items-center gap-3">
             {!online && (
               <span className="flex items-center gap-1.5 text-xs text-destructive">
@@ -46,7 +56,9 @@ export default function App() {
           </div>
         </header>
         <main className="flex min-h-0 flex-1 flex-col">
-          {route.page === 'reviews' ? <ReviewsPage version={version} /> : <ReviewRoute id={route.id} itemId={route.item} version={version} />}
+          {route.page === 'reviews' && <ReviewsPage version={version} />}
+          {route.page === 'skills' && <SkillsPage version={version} />}
+          {route.page === 'review' && <ReviewRoute id={route.id} itemId={route.item} version={version} />}
         </main>
       </div>
       <Toaster />

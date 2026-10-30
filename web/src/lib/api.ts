@@ -55,6 +55,16 @@ export type Review = {
   items: Item[]
 }
 
+export type Skill = {
+  id: string
+  name: string
+  description: string
+  files: string[]
+  content: string
+  installed: boolean
+  install_command: string
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, init)
   const body = await response.json().catch(() => null)
@@ -75,6 +85,7 @@ export const latest = (item: Item) => item.rounds[item.rounds.length - 1]
 
 export const api = {
   version: () => call<{ version: number }>('/version'),
+  skills: () => call<Skill[]>('/skills'),
   reviews: () => call<ReviewSummary[]>('/reviews'),
   review: (id: number) => call<Review>(`/reviews/${id}`),
   createReview: (title: string) => call<Review>('/reviews', json('POST', { title })),

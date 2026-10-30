@@ -63,6 +63,7 @@ pub fn router(store: Shared, port: u16) -> Router {
         .route("/rounds/{id}/baked.png", get(baked))
         .route("/inbox", get(inbox))
         .route("/images/{file}", get(image))
+        .route("/skills", get(skills))
         .layer(DefaultBodyLimit::max(MAX_UPLOAD))
         .with_state(store);
     Router::new()
@@ -267,6 +268,10 @@ async fn image(State(store): State<Shared>, Path(file): Path<String>) -> Reply {
     let bytes = with_store(store, move |s| Ok(std::fs::read(s.image_path(&file))?)).await?;
     // Named by their contents, so they never change.
     Ok(([(header::CONTENT_TYPE, mime), (header::CACHE_CONTROL, "public, max-age=31536000, immutable")], bytes).into_response())
+}
+
+async fn skills() -> Reply {
+    ok(crate::skills::list())
 }
 
 #[cfg(test)]

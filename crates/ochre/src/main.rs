@@ -10,7 +10,7 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use ochre::{bake, model::Request, paths, server, store::Store};
+use ochre::{bake, model::Request, paths, server, skills, store::Store};
 
 #[derive(Parser)]
 #[command(name = "ochre", version = VERSION_TEXT, about = "Mark up images, hand them to an AI, and go round until they're right.")]
@@ -92,7 +92,32 @@ enum Cmd {
     Approve { item: i64 },
     /// How an AI should use ochre
     Guide,
+    /// Skills that teach an AI to make a kind of image and run it through ochre
+    #[command(subcommand)]
+    Skill(SkillCmd),
     /// Pull the latest code and reinstall
+    Update,
+}
+
+#[derive(Subcommand)]
+enum SkillCmd {
+    /// What's available, and what's installed
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print a skill's SKILL.md
+    Show { id: String },
+    /// Install skills into ~/.claude/skills (as ochre-<id>)
+    Install {
+        ids: Vec<String>,
+        #[arg(long)]
+        all: bool,
+        /// Install somewhere else
+        #[arg(long)]
+        dir: Option<PathBuf>,
+    },
+    /// Refresh every skill that's already installed
     Update,
 }
 
@@ -197,7 +222,47 @@ fn run(cli: Cli) -> Result<()> {
             println!("{GUIDE}");
             Ok(())
         }
+        Cmd::Skill(command) => skill(command),
         Cmd::Update => update(),
+    }
+}
+
+fn skill(command: SkillCmd) -> Result<()> {
+    match command {
+        SkillCmd::List { json } => {
+            let all = skills::list();
+            if json {
+                println!("{}", serde_json::to_string_pretty(&all)?);
+                return Ok(());
+            }
+            for skill in all {
+                let mark = if skill.installed { "installed" } else { "" };
+                println!("{:<12} {:<10} {}", skill.id, mark, skill.description);
+            }
+            println!("\nInstall with: ochre skill install <id>   (into {})", skills::skills_dir().display());
+            Ok(())
+        }
+        SkillCmd::Show { id } => {
+            println!("{}", skills::get(&id)?.content);
+            Ok(())
+        }
+        SkillCmd::Install { ids, all, dir } => {
+            let dir = dir.unwrap_or_else(skills::skills_dir);
+            let ids: Vec<String> = if all { skills::list().into_iter().map(|s| s.id).collect() } else { ids };
+            if ids.is_empty() {
+                bail!("name a skill (ochre skill list), or pass --all");
+            }
+            for id in ids {
+                println!("Installed {}", skills::install(&id, &dir)?.display());
+            }
+            Ok(())
+        }
+        SkillCmd::Update => {
+            for skill in skills::list().into_iter().filter(|s| s.installed) {
+                println!("Updated {}", skills::install(&skill.id, &skills::skills_dir())?.display());
+            }
+            Ok(())
+        }
     }
 }
 
@@ -330,6 +395,11 @@ For an AI:
 Look at marked.png from `ochre pull`: numbered badges sit on each mark, and the notes are
 listed under the image against those numbers. Make one new image per item, answer each with
 `ochre respond`, then `ochre wait` again. Items the person approves drop out.
+
+Skills: step-by-step guides for a kind of image (UI screenshots, …), including the loop above.
+  ochre skill list                 what's available
+  ochre skill show ui              read one now
+  ochre skill install ui           install it for Claude Code (~/.claude/skills/ochre-ui)
 
 For a person:
   ochre open                       open the page (starts the server if needed)

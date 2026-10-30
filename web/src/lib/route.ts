@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 //   #/                 reviews
 //   #/r/<id>           one review
 //   #/r/<id>/<item>    one item, inside its review
-export type Route = { page: 'reviews' } | { page: 'review'; id: number; item: number | null }
+//   #/skills           skills for agents
+export type Route = { page: 'reviews' } | { page: 'skills' } | { page: 'review'; id: number; item: number | null }
 
 export function parseRoute(hash: string): Route {
   const [, kind, id, item] = hash.replace(/^#/, '').split('/')
+  if (kind === 'skills') return { page: 'skills' }
   const reviewId = Number(id)
   if (kind === 'r' && reviewId) return { page: 'review', id: reviewId, item: Number(item) || null }
   return { page: 'reviews' }

@@ -1,0 +1,18 @@
+{
+  "baseUrl": "http://localhost:5173",
+  "out": ".ochre/shots",
+  "viewports": { "desktop": [1440, 900], "mobile": [390, 844] },
+  "colorSchemes": ["light"],
+  "shots": [
+    { "name": "login", "path": "/login", "waitFor": "text=Sign in" },
+    {
+      "name": "login-error",
+      "path": "/login",
+      "viewports": ["desktop"],
+      "actions": [{ "fill": ["input[type=email]", "not-an-email"] }, { "click": "button[type=submit]" }],
+      "waitFor": "[role=alert]"
+    },
+    { "name": "dashboard", "path": "/", "viewports": ["desktop"], "colorSchemes": ["light", "dark"], "fullPage": true, "mask": [".last-updated"] },
+    { "name": "profile-card", "path": "/settings", "clip": "[data-testid=profile-card]" }
+  ]
+}

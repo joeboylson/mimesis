@@ -71,6 +71,20 @@ The server has the same over HTTP on `http://127.0.0.1:4620`:
 `GET /api/inbox`, `GET /api/rounds/<id>/baked.png`, and
 `POST /api/items/<id>/respond?note=…` with the image as the body.
 
+## Skills
+
+Skills teach an agent how to make a kind of image so a remake differs only
+by what you asked for, and how to run it through Ochre. They live in
+[`skills/`](skills/README.md), are built into `ochre`, and show on the
+page's **Skills** tab with copy buttons.
+
+```sh
+ochre skill list
+ochre skill install ui     # ~/.claude/skills/ochre-ui: UI screenshots → Ochre → fix → repeat
+```
+
+`ochre update` refreshes installed skills.
+
 ## How it's built
 
 - `crates/ochre`: the store (SQLite and image files in `~/.ochre`),

@@ -6,6 +6,7 @@ pub mod bake;
 pub mod model;
 pub mod paths;
 pub mod server;
+pub mod skills;
 pub mod store;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

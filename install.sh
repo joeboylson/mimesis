@@ -28,6 +28,8 @@ mkdir -p "$bin_dir"
 cp target/release/ochre "$bin_dir/.ochre.new"
 mv "$bin_dir/.ochre.new" "$bin_dir/ochre"
 echo "Installed $("$bin_dir/ochre" --version) in $bin_dir"
+# Skills already installed get this version's copy.
+"$bin_dir/ochre" skill update
 
 if [ "$app" = true ]; then
   if [ "$(uname -s)" != Darwin ]; then
