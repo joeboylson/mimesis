@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 
-async function copyText(text: string) {
+export async function copyText(text: string) {
   if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text)
   // Older webviews: the selection-and-copy way.
   const area = document.createElement('textarea')

@@ -63,11 +63,16 @@ as the item's name, and `ochre pull` gives it back as `name`.
 Shot options: `path`, `waitFor` (selector), `actions` (list of `click`,
 `fill: [selector, text]`, `hover`, `press`, `wait` ms, `eval` JS), `fullPage`,
 `clip` (selector to shoot one element), `hide` / `mask` (selectors for
-content that changes on its own), `viewports`, `colorSchemes`. Add
-`"storageState": "path.json"` at the top for signed-in pages.
+content that changes on its own), `viewports`, `colorSchemes`, `baseUrl`
+(this shot only). At the top: `"storageState": "path.json"` for signed-in
+pages, `"permissions": ["clipboard-read", "clipboard-write"]` for copy
+buttons.
 
 Ask yourself which states the person needs to judge: empty, loading, error,
-long text, hover/open menus, both themes, mobile. Each one is a shot.
+long text, open menus and modals, notices after an action, mobile. Each one
+is a shot. Cover every kind of page, but only one of each: one list page,
+one detail page, not a shot per record. Use one theme unless the person asks
+for both.
 
 Commit `.ochre/shots.json` if the project wants it; add `.ochre/shots/` to
 `.gitignore`.

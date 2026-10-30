@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ImagePlus, Send, Terminal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckCheck, ImagePlus, Terminal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -18,12 +18,12 @@ type Filter = 'all' | ItemState
 
 const FILTERS: { filter: Filter; label: string }[] = [
   { filter: 'all', label: 'All' },
-  { filter: 'with_you', label: 'With you' },
-  { filter: 'with_ai', label: 'With AI' },
+  { filter: 'needs_review', label: 'Needs review' },
+  { filter: 'reviewed', label: 'Reviewed' },
   { filter: 'approved', label: 'Approved' },
 ]
 
-export const hasMarks = (item: Item) => item.state === 'with_you' && (latest(item).annotations.length > 0 || latest(item).note.trim() !== '')
+export const hasMarks = (item: Item) => item.state === 'needs_review' && (latest(item).annotations.length > 0 || latest(item).note.trim() !== '')
 
 function ItemCard({ item }: { item: Item }) {
   const round = latest(item)
@@ -74,13 +74,13 @@ export function ReviewPage({ review }: { review: Review }) {
       .then(() => toast.success(`Added ${files.length} image${files.length === 1 ? '' : 's'}`))
       .catch((e) => toast.error(e.message))
 
-  const sendAll = () =>
+  const finish = () =>
     api
       .sendAll(review.id)
-      .then(({ sent }) => toast.success(`Sent ${sent.length} to the AI`))
+      .then(({ sent }) => toast.success(`Marked ${sent.length} image${sent.length === 1 ? '' : 's'} as reviewed`))
       .catch((e) => toast.error(e.message))
 
-  const firstWithYou = review.items.find((item) => item.state === 'with_you')
+  const firstNeedsReview = review.items.find((item) => item.state === 'needs_review')
 
   return (
     <DropZone label="Drop to add images" onFiles={upload}>
@@ -102,14 +102,14 @@ export function ReviewPage({ review }: { review: Review }) {
             <Button variant="ghost" size="icon" aria-label="Delete review" onClick={() => setConfirmDelete(true)}>
               <Trash2 />
             </Button>
-            {firstWithYou && (
-              <Button variant="outline" onClick={() => go(itemHash(review.id, firstWithYou.id))}>
+            {firstNeedsReview && (
+              <Button variant="outline" onClick={() => go(itemHash(review.id, firstNeedsReview.id))}>
                 Start marking up
               </Button>
             )}
-            <Button onClick={sendAll} disabled={ready.length === 0}>
-              <Send />
-              Send {ready.length || ''} to AI
+            <Button onClick={finish} disabled={ready.length === 0}>
+              <CheckCheck />
+              Finish review{ready.length ? ` (${ready.length})` : ''}
             </Button>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function ReviewPage({ review }: { review: Review }) {
               </EmptyMedia>
               <EmptyTitle>No images yet</EmptyTitle>
               <EmptyDescription>
-                Drop images here, or have the AI run <code className="font-mono">ochre add {review.id} image.png</code>.
+                Drop images here, or run <code className="font-mono">ochre add {review.id} image.png</code>.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

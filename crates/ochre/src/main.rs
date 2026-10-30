@@ -51,7 +51,7 @@ enum Cmd {
         #[arg(long)]
         json: bool,
     },
-    /// Items marked up and waiting for the AI
+    /// Reviewed items waiting for a new version
     Inbox {
         #[arg(long)]
         review: Option<i64>,
@@ -78,7 +78,7 @@ enum Cmd {
         #[arg(long, short, default_value = "")]
         note: String,
     },
-    /// Wait until something is waiting for the AI, then list it
+    /// Wait until the person finishes reviewing something, then list it
     Wait {
         #[arg(long)]
         review: Option<i64>,
@@ -171,7 +171,7 @@ fn run(cli: Cli) -> Result<()> {
                 println!("No reviews yet. Start one: ochre new \"Title\" image.png …");
             } else {
                 for r in reviews {
-                    println!("{:>4}  {}  ({} images: {} with you, {} with AI, {} approved)", r.id, r.title, r.total, r.with_you, r.with_ai, r.approved);
+                    println!("{:>4}  {}  ({} images: {} need review, {} reviewed, {} approved)", r.id, r.title, r.total, r.needs_review, r.reviewed, r.approved);
                 }
             }
             Ok(())
@@ -196,7 +196,7 @@ fn run(cli: Cli) -> Result<()> {
         Cmd::Respond { item, image, note } => {
             let bytes = std::fs::read(&image).with_context(|| format!("can't read {}", image.display()))?;
             let round = Store::open()?.respond(item, &bytes, &note)?;
-            println!("Item {item} is on round {}, back with the person.", round.number);
+            println!("Item {item} is on round {}, ready for review.", round.number);
             Ok(())
         }
         Cmd::Wait { review, timeout, json } => {
@@ -278,7 +278,7 @@ fn print_requests(requests: &[Request], json: bool) -> Result<()> {
         return Ok(());
     }
     if requests.is_empty() {
-        println!("Nothing is waiting for the AI.");
+        println!("Nothing has been reviewed yet.");
     }
     for request in requests {
         println!("Item {} — {} (review {}: {}), round {}", request.item_id, request.name, request.review_id, request.review_title, request.round);
@@ -323,7 +323,7 @@ fn pull(items: Vec<i64>, review: Option<i64>, out: Option<PathBuf>, json: bool) 
         return Ok(());
     }
     if requests.is_empty() {
-        println!("Nothing is waiting for the AI.");
+        println!("Nothing has been reviewed yet.");
         return Ok(());
     }
     print_requests(&requests, false)?;
@@ -377,15 +377,15 @@ const GUIDE: &str = "\
 Ochre: a person marks up images; you answer with new images; repeat until they approve.
 
 A review holds images. Each image (an item) goes round by round:
-  with you   the person is looking at it, marking it up, or approving it
-  with AI    the person sent marks back; your turn to make a new image
+  needs review   the person looks at it, marks it up, or approves it
+  reviewed       the person finished marking it up; your turn to make a new version
   approved   done
 
 For an AI:
   ochre new \"Title\" a.png b.png   start a review with images (prints its id)
   ochre add <review> c.png         add more images
-  ochre wait --review <id>         block until the person sends something back
-  ochre pull --review <id>         save each waiting item's image with the marks drawn in,
+  ochre wait --review <id>         block until the person finishes reviewing something
+  ochre pull --review <id>         save each reviewed item's image with the marks drawn in,
                                    plus request.json (every mark's note and pixel area)
   ochre respond <item> new.png -n \"what changed\"
                                    answer with a new image; the person sees it beside the last one

@@ -61,23 +61,23 @@ impl Shape {
 #[serde(rename_all = "snake_case")]
 pub enum ItemState {
     /// The person's turn: look at the image, mark it up or approve it.
-    WithYou,
-    /// Sent back with marks; waiting for the AI's new image.
-    WithAi,
+    NeedsReview,
+    /// The person marked it up and finished; it waits for a new version.
+    Reviewed,
     Approved,
 }
 
 impl ItemState {
     pub fn label(self) -> &'static str {
         match self {
-            ItemState::WithYou => "with you",
-            ItemState::WithAi => "with AI",
+            ItemState::NeedsReview => "needs review",
+            ItemState::Reviewed => "reviewed",
             ItemState::Approved => "approved",
         }
     }
 }
 
-/// One pass over an image: the image itself, what the AI said about it,
+/// One pass over an image: the image itself, the note that came with it,
 /// and the person's marks on it.
 #[derive(Serialize, Clone, Debug)]
 pub struct Round {
@@ -118,8 +118,8 @@ pub struct ReviewSummary {
     pub updated_at: i64,
     pub archived: bool,
     pub total: i64,
-    pub with_you: i64,
-    pub with_ai: i64,
+    pub needs_review: i64,
+    pub reviewed: i64,
     pub approved: i64,
     pub cover: Option<String>,
 }
@@ -133,7 +133,7 @@ pub struct Review {
     pub items: Vec<Item>,
 }
 
-/// What the AI needs to act on one item: the marked-up round, with every
+/// What whoever makes the next version needs: the marked-up round, with every
 /// mark's note and where it sits in pixels.
 #[derive(Serialize, Clone, Debug)]
 pub struct Request {

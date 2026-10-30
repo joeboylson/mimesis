@@ -90,11 +90,12 @@ async function main() {
             locale: config.locale ?? 'en-US',
             timezoneId: config.timezone ?? 'UTC',
             storageState: config.storageState ? resolve(root, config.storageState) : undefined,
+            permissions: config.permissions ?? [],
           })
           const page = await context.newPage()
           const name = `${shot.name}-${viewportName}${scheme === 'light' ? '' : `-${scheme}`}.png`
           try {
-            await page.goto(new URL(shot.path ?? '/', config.baseUrl).href, { waitUntil: 'load' })
+            await page.goto(new URL(shot.path ?? '/', shot.baseUrl ?? config.baseUrl).href, { waitUntil: 'load' })
             await page.addStyleTag({ content: FREEZE_CSS })
             for (const selector of shot.hide ?? []) await page.locator(selector).evaluateAll((els) => els.forEach((el) => (el.style.visibility = 'hidden')))
             for (const action of shot.actions ?? []) await act(page, action)

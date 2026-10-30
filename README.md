@@ -1,7 +1,8 @@
 # ochre
 
 A place for you and an AI to talk in pictures. Put a set of images in a
-review, mark up what should change, and hand them all to the AI at once. It
+review, mark up what should change, and finish the review. The AI picks
+up what you reviewed with the `ochre` command. It
 answers each one with a new image. You see what you asked for next to what
 came back, then approve it or mark it up again, round after round, until
 it's right.
@@ -41,9 +42,10 @@ Or open the Ochre app. Both show the same page.
 - **Mark up**: open an image and draw boxes, circles, arrows, lines, or
   pins. Each mark gets a number and a note. Add an overall note for anything
   that isn't about one spot. Everything saves as you go.
-- **Send**: send one image (⌘↵), or mark up a whole batch and press
-  **Send to AI** on the review to hand over every marked image at once.
-- **Compare**: when the AI answers, the image comes back to you with your
+- **Finish**: mark one image as reviewed (⌘↵), or mark up a whole batch
+  and press **Finish review** to mark every marked-up image as reviewed.
+  Ochre only holds the images; your agent picks them up with `ochre pull`.
+- **Compare**: when a new version is added, the image comes back to you with your
   last round's marks on the left and the new image on the right. Approve
   it, or switch to **Mark up** and go again.
 
@@ -56,7 +58,7 @@ Keys on an image: `v` select, `r` box, `o` circle, `a` arrow, `p` draw,
 `ochre guide` prints this for an agent. The short version:
 
 ```sh
-ochre wait --review 3          # block until the person sends something back
+ochre wait --review 3          # block until the person finishes reviewing something
 ochre pull --review 3          # for each waiting image: marked.png, original, request.json
 ochre respond 12 new.png -n "Widened the button, used the brand green"
 ```

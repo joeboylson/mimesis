@@ -1,4 +1,4 @@
-import { ImagePlus, Images, Plus } from 'lucide-react'
+import { Bot, ImagePlus, Images, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { copyText } from '@/components/copy-button'
 import { useReviews } from '@/hooks/use-ochre'
 import { addImages, api, imageUrl, type ReviewSummary } from '@/lib/api'
 import { go, reviewHash } from '@/lib/route'
@@ -42,7 +44,7 @@ function NewReviewDialog({ open, onOpenChange, files: initial }: { open: boolean
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New review</DialogTitle>
-          <DialogDescription>A set of images to mark up and send to the AI. You can add more later, or the AI can.</DialogDescription>
+          <DialogDescription>A set of images to mark up. You can add more later.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-2">
@@ -68,6 +70,27 @@ function NewReviewDialog({ open, onOpenChange, files: initial }: { open: boolean
   )
 }
 
+// What to paste to an agent so it starts a review and works it with you.
+const START_PROMPT =
+  'Start a new Ochre review: run `ochre guide` (and `ochre skill list` for a skill that fits), put the images in with `ochre new`, then wait for my review and make new versions until I approve each one.'
+
+function StartWithAi() {
+  const copy = () =>
+    copyText(START_PROMPT)
+      .then(() => toast.success('Copied a prompt for your agent', { description: 'Paste it into Claude Code or any agent with ochre installed.' }))
+      .catch((e) => toast.error(e.message))
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="outline" size="icon" aria-label="Start a new review with AI" onClick={copy}>
+          <Bot />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Start a new review with AI</TooltipContent>
+    </Tooltip>
+  )
+}
+
 function ReviewCard({ review }: { review: ReviewSummary }) {
   return (
     <Card className="cursor-pointer gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md" onClick={() => go(reviewHash(review.id))}>
@@ -77,8 +100,8 @@ function ReviewCard({ review }: { review: ReviewSummary }) {
       <div className="grid gap-2 p-3">
         <div className="truncate font-medium">{review.title}</div>
         <div className="flex flex-wrap gap-1">
-          {review.with_you > 0 && <Badge>{review.with_you} with you</Badge>}
-          {review.with_ai > 0 && <Badge variant="secondary">{review.with_ai} with AI</Badge>}
+          {review.needs_review > 0 && <Badge>{review.needs_review} need review</Badge>}
+          {review.reviewed > 0 && <Badge variant="secondary">{review.reviewed} reviewed</Badge>}
           {review.approved > 0 && <Badge variant="outline">{review.approved} approved</Badge>}
           {review.total === 0 && <Badge variant="outline">No images</Badge>}
           {review.archived && <Badge variant="ghost">Archived</Badge>}
@@ -97,7 +120,7 @@ export function ReviewsPage({ version }: { version: number | null }) {
 
   return (
     <DropZone label="Drop to start a review" onFiles={(files) => setDialog({ files })}>
-      <div className="mx-auto grid w-full max-w-6xl gap-6 overflow-y-auto p-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-6 overflow-y-auto p-6">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-xl font-semibold">Reviews</h1>
           <div className="flex items-center gap-2">
@@ -106,6 +129,7 @@ export function ReviewsPage({ version }: { version: number | null }) {
                 {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
               </Button>
             )}
+            <StartWithAi />
             <Button onClick={() => setDialog({ files: [] })}>
               <Plus />
               New review
@@ -113,22 +137,13 @@ export function ReviewsPage({ version }: { version: number | null }) {
           </div>
         </div>
         {reviews && shown.length === 0 ? (
-          <Empty className="border border-dashed">
+          <Empty className="flex-1 border border-dashed">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <Images />
               </EmptyMedia>
               <EmptyTitle>No reviews yet</EmptyTitle>
-              <EmptyDescription>
-                Drop images here to start one, or have the AI run <code className="font-mono">ochre new "Title" a.png b.png</code>.
-              </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-              <Button onClick={() => setDialog({ files: [] })}>
-                <Plus />
-                New review
-              </Button>
-            </EmptyContent>
           </Empty>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">

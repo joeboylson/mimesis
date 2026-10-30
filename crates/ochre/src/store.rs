@@ -143,8 +143,8 @@ impl Store {
                     updated_at,
                     archived,
                     total: items.len() as i64,
-                    with_you: count(ItemState::WithYou),
-                    with_ai: count(ItemState::WithAi),
+                    needs_review: count(ItemState::NeedsReview),
+                    reviewed: count(ItemState::Reviewed),
                     approved: count(ItemState::Approved),
                     cover: items.first().map(|item| item.latest().image.clone()),
                 })
@@ -188,9 +188,9 @@ impl Store {
         let state = if approved_at.is_some() {
             ItemState::Approved
         } else if latest.sent_at.is_some() {
-            ItemState::WithAi
+            ItemState::Reviewed
         } else {
-            ItemState::WithYou
+            ItemState::NeedsReview
         };
         Ok(Item { id, review_id, name, state, approved_at, rounds })
     }
@@ -248,7 +248,7 @@ impl Store {
     pub fn save_marks(&self, round_id: i64, annotations: &[Annotation], note: &str) -> Result<()> {
         let round = self.round(round_id)?;
         let item = self.item(round.item_id)?;
-        if round.id != item.latest().id || item.state != ItemState::WithYou {
+        if round.id != item.latest().id || item.state != ItemState::NeedsReview {
             bail!("round {round_id} can't be marked up any more: it's been sent or answered");
         }
         let json = serde_json::to_string(annotations)?;
@@ -256,27 +256,27 @@ impl Store {
         self.changed(item.review_id)
     }
 
-    /// Hands the item's latest round to the AI.
+    /// Marks the item's latest round as reviewed.
     pub fn send(&self, item_id: i64) -> Result<()> {
         let item = self.item(item_id)?;
-        if item.state != ItemState::WithYou {
-            bail!("item {item_id} is {}, so there's nothing to send", item.state.label());
+        if item.state != ItemState::NeedsReview {
+            bail!("item {item_id} is {}, so it can't be marked as reviewed", item.state.label());
         }
         let latest = item.latest();
         if latest.annotations.is_empty() && latest.note.trim().is_empty() {
-            bail!("item {item_id} has no marks or note to send");
+            bail!("item {item_id} has no marks or note yet");
         }
         self.conn.execute("UPDATE rounds SET sent_at = ?1 WHERE id = ?2", params![now(), latest.id])?;
         self.changed(item.review_id)
     }
 
-    /// Sends every item in the review that has marks or a note waiting.
+    /// Finishes the review: marks every item with marks or a note as reviewed.
     pub fn send_all(&self, review_id: i64) -> Result<Vec<i64>> {
         let review = self.review(review_id)?;
         let ready: Vec<i64> = review
             .items
             .iter()
-            .filter(|item| item.state == ItemState::WithYou)
+            .filter(|item| item.state == ItemState::NeedsReview)
             .filter(|item| !item.latest().annotations.is_empty() || !item.latest().note.trim().is_empty())
             .map(|item| item.id)
             .collect();
@@ -286,11 +286,11 @@ impl Store {
         Ok(ready)
     }
 
-    /// Takes a sent round back, as long as the AI hasn't answered it.
+    /// Reopens a reviewed round, as long as no new version has come in.
     pub fn unsend(&self, item_id: i64) -> Result<()> {
         let item = self.item(item_id)?;
-        if item.state != ItemState::WithAi {
-            bail!("item {item_id} is {}, not waiting on the AI", item.state.label());
+        if item.state != ItemState::Reviewed {
+            bail!("item {item_id} is {}, not reviewed", item.state.label());
         }
         self.conn.execute("UPDATE rounds SET sent_at = NULL WHERE id = ?1", [item.latest().id])?;
         self.changed(item.review_id)
@@ -308,7 +308,7 @@ impl Store {
         self.changed(item.review_id)
     }
 
-    /// The AI's answer: a new image, which starts the next round.
+    /// A new version of the image, which starts the next round.
     pub fn respond(&self, item_id: i64, bytes: &[u8], note: &str) -> Result<Round> {
         let item = self.item(item_id)?;
         if item.state == ItemState::Approved {
@@ -325,7 +325,7 @@ impl Store {
         self.round(round_id)
     }
 
-    /// Every item waiting on the AI, optionally only in one review.
+    /// Every reviewed item waiting for a new version, optionally only in one review.
     pub fn inbox(&self, review_id: Option<i64>) -> Result<Vec<Request>> {
         let reviews: Vec<(i64, String)> = match review_id {
             Some(id) => vec![(id, self.review_title(id).map_err(|_| not_found("review", id))?)],
@@ -334,7 +334,7 @@ impl Store {
         let mut requests = vec![];
         for (id, title) in reviews {
             for item in self.items_of(id)? {
-                if item.state == ItemState::WithAi {
+                if item.state == ItemState::Reviewed {
                     let round = item.latest().clone();
                     let image = self.image_path(&round.image).display().to_string();
                     requests.push(Request::from(&title, &item, &round, image));
@@ -347,7 +347,7 @@ impl Store {
     pub fn request(&self, item_id: i64) -> Result<Request> {
         let item = self.item(item_id)?;
         let title = self.review_title(item.review_id)?;
-        // The round the AI should work from: the latest sent one.
+        // The round to work from: the latest reviewed one.
         let round = item.rounds.iter().rev().find(|round| round.sent_at.is_some()).unwrap_or(item.latest()).clone();
         let image = self.image_path(&round.image).display().to_string();
         Ok(Request::from(&title, &item, &round, image))
@@ -414,17 +414,17 @@ mod tests {
     }
 
     #[test]
-    fn a_round_trip_goes_with_you_then_with_ai_then_back() {
+    fn a_round_trip_goes_needs_review_then_reviewed_then_back() {
         let (store, folder) = temp_store();
         let review = store.create_review("Icons").unwrap();
         let item = store.add_image(review, "a.png", &png(40, 20, 10)).unwrap();
-        assert_eq!(store.item(item).unwrap().state, ItemState::WithYou);
+        assert_eq!(store.item(item).unwrap().state, ItemState::NeedsReview);
         assert!(store.send(item).is_err(), "nothing to send yet");
 
         let round = store.item(item).unwrap().latest().id;
         store.save_marks(round, &[mark("bigger")], "").unwrap();
         store.send(item).unwrap();
-        assert_eq!(store.item(item).unwrap().state, ItemState::WithAi);
+        assert_eq!(store.item(item).unwrap().state, ItemState::Reviewed);
         assert!(store.save_marks(round, &[], "").is_err(), "sent rounds are locked");
 
         let inbox = store.inbox(None).unwrap();
@@ -434,7 +434,7 @@ mod tests {
         let next = store.respond(item, &png(40, 20, 200), "made it bigger").unwrap();
         assert_eq!(next.number, 2);
         let after = store.item(item).unwrap();
-        assert_eq!(after.state, ItemState::WithYou);
+        assert_eq!(after.state, ItemState::NeedsReview);
         assert!(store.inbox(None).unwrap().is_empty());
 
         store.approve(item).unwrap();

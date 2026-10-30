@@ -1,4 +1,4 @@
-import { ArrowLeft, Bot, Check, ChevronLeft, ChevronRight, Columns2, PenLine, Redo, RotateCcw, Send, Trash2, Undo, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, PenLine, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -21,14 +21,14 @@ const isTyping = (event: KeyboardEvent) => {
 }
 
 // After sending or approving, go to the next image that's waiting on the person.
-function nextWithYou(review: Review, after: Item) {
+function nextNeedsReview(review: Review, after: Item) {
   const index = review.items.findIndex((i) => i.id === after.id)
   const rest = [...review.items.slice(index + 1), ...review.items.slice(0, index)]
-  return rest.find((i) => i.state === 'with_you')
+  return rest.find((i) => i.state === 'needs_review')
 }
 
 function goNext(review: Review, item: Item) {
-  const next = nextWithYou(review, item)
+  const next = nextNeedsReview(review, item)
   go(next ? itemHash(review.id, next.id) : reviewHash(review.id))
 }
 
@@ -45,8 +45,8 @@ function AiNote({ round }: { round: Round }) {
   return (
     <div className="grid gap-1.5 rounded-lg border bg-muted/50 p-3 text-sm">
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <Bot className="size-3.5" />
-        From the AI, round {round.number}
+        <MessageSquare className="size-3.5" />
+        Note with round {round.number}
       </div>
       <p className="whitespace-pre-wrap">{round.ai_note}</p>
     </div>
@@ -151,7 +151,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
     try {
       await flush()
       await api.send(item.id)
-      toast.success(`Sent ${item.name} to the AI`)
+      toast.success(`Marked ${item.name} as reviewed`)
       goNext(review, item)
     } catch (e) {
       toast.error((e as Error).message)
@@ -251,11 +251,11 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
         ) : (
           <div className="absolute inset-4 top-16 grid grid-cols-2 gap-4">
             <figure className="flex min-h-0 flex-col gap-2">
-              <figcaption className="text-center text-xs text-muted-foreground">Round {previous.number}: what you asked for</figcaption>
+              <figcaption className="text-center text-xs text-muted-foreground">Round {previous.number}: your marks</figcaption>
               <MarkedImage src={imageUrl(previous.image)} width={previous.width} height={previous.height} annotations={previous.annotations} className="min-h-0 flex-1" />
             </figure>
             <figure className="flex min-h-0 flex-col gap-2">
-              <figcaption className="text-center text-xs text-muted-foreground">Round {round.number}: what came back</figcaption>
+              <figcaption className="text-center text-xs text-muted-foreground">Round {round.number}: new version</figcaption>
               <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={annotations} className="min-h-0 flex-1" />
             </figure>
           </div>
@@ -266,7 +266,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
         <div className="grid flex-1 content-start gap-5 overflow-y-auto p-4">
           <AiNote round={round} />
           {previous && (
-            <Section title={`You asked, round ${previous.number}`}>
+            <Section title={`Your marks, round ${previous.number}`}>
               <ReadOnlyMarks round={previous} />
             </Section>
           )}
@@ -308,8 +308,8 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
         </div>
         <div className="grid gap-2 border-t p-4">
           <Button onClick={send} disabled={!canSend}>
-            <Send />
-            Send to AI
+            <CheckCheck />
+            Mark as reviewed
             <kbd className="ml-auto text-xs opacity-60">⌘↵</kbd>
           </Button>
           <Button variant="outline" onClick={approve}>
@@ -333,10 +333,10 @@ function ViewRound({ item, round, isLatest }: { item: Item; round: Round; isLate
       </div>
       <aside className="flex w-80 shrink-0 flex-col border-l">
         <div className="grid flex-1 content-start gap-5 overflow-y-auto p-4">
-          {isLatest && item.state === 'with_ai' && (
+          {isLatest && item.state === 'reviewed' && (
             <div className="rounded-lg border border-dashed p-3 text-sm">
-              <div className="font-medium">Waiting for the AI</div>
-              <p className="mt-1 text-muted-foreground">It picks this up with <code className="font-mono">ochre pull</code> and answers with a new image.</p>
+              <div className="font-medium">Reviewed</div>
+              <p className="mt-1 text-muted-foreground">The next version shows up here when it's added.</p>
             </div>
           )}
           {isLatest && item.state === 'approved' && (
@@ -355,13 +355,13 @@ function ViewRound({ item, round, isLatest }: { item: Item; round: Round; isLate
         </div>
         {isLatest && (
           <div className="grid gap-2 border-t p-4">
-            {item.state === 'with_ai' && (
+            {item.state === 'reviewed' && (
               <Button variant="outline" onClick={() => action(api.unsend(item.id))}>
                 <Undo2 />
-                Take back
+                Reopen for review
               </Button>
             )}
-            {item.state === 'with_ai' && (
+            {item.state === 'reviewed' && (
               <Button variant="outline" onClick={() => action(api.approve(item.id))}>
                 <Check />
                 Approve as is
@@ -433,7 +433,7 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
         </div>
       </div>
       <div className="flex min-h-0 flex-1">
-        {isLatest && item.state === 'with_you' ? (
+        {isLatest && item.state === 'needs_review' ? (
           <EditRound key={round.id} review={review} item={item} round={round} previous={previous} />
         ) : (
           <ViewRound item={item} round={round} isLatest={isLatest} />

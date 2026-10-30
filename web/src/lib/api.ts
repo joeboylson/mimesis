@@ -9,7 +9,7 @@ export type Shape =
 
 export type Annotation = Shape & { id: string; color: string; note: string }
 
-export type ItemState = 'with_you' | 'with_ai' | 'approved'
+export type ItemState = 'needs_review' | 'reviewed' | 'approved'
 
 export type Round = {
   id: number
@@ -41,8 +41,8 @@ export type ReviewSummary = {
   updated_at: number
   archived: boolean
   total: number
-  with_you: number
-  with_ai: number
+  needs_review: number
+  reviewed: number
   approved: number
   cover: string | null
 }

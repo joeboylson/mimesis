@@ -1,12 +1,11 @@
-import { BookOpen, ChevronDown } from 'lucide-react'
+import { BookOpen, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { CopyButton } from '@/components/copy-button'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { api, type Skill } from '@/lib/api'
-import { cn } from '@/lib/utils'
 
 // What to paste to an agent that should run the skill now.
 const promptFor = (skill: Skill) =>
@@ -20,7 +19,6 @@ function SkillCard({ skill }: { skill: Skill }) {
       <div className="grid gap-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono font-medium">{skill.name}</span>
-          {skill.installed ? <Badge variant="secondary">Installed</Badge> : <Badge variant="outline">Not installed</Badge>}
           <span className="ml-auto text-xs text-muted-foreground">{skill.files.length} file{skill.files.length === 1 ? '' : 's'}</span>
         </div>
         <p className="text-sm text-muted-foreground">{skill.description}</p>
@@ -31,13 +29,24 @@ function SkillCard({ skill }: { skill: Skill }) {
         <div className="flex flex-wrap gap-2">
           <CopyButton text={promptFor(skill)} label="Copy prompt for an agent" />
           <CopyButton text={skill.content} label="Copy SKILL.md" />
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setOpen(!open)}>
-            {open ? 'Hide' : 'Read'}
-            <ChevronDown className={cn('transition-transform', open && 'rotate-180')} />
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setOpen(true)}>
+            <FileText />
+            Read
           </Button>
         </div>
       </div>
-      {open && <pre className="max-h-[60vh] overflow-auto border-t bg-muted/30 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">{skill.content}</pre>}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-mono">{skill.name}</DialogTitle>
+            <DialogDescription>{skill.files.join(' · ')}</DialogDescription>
+          </DialogHeader>
+          <pre className="min-h-0 flex-1 overflow-auto rounded-md bg-muted/50 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">{skill.content}</pre>
+          <div className="flex justify-end gap-2">
+            <CopyButton text={skill.content} label="Copy SKILL.md" />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
