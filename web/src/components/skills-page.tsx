@@ -5,6 +5,7 @@ import { CopyButton } from '@/components/copy-button'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { api, type Skill } from '@/lib/api'
 
 // What to paste to an agent that should run the skill now.
@@ -24,26 +25,30 @@ function SkillCard({ skill }: { skill: Skill }) {
         <p className="text-sm text-muted-foreground">{skill.description}</p>
         <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 font-mono text-xs">
           <span className="flex-1 truncate">{skill.install_command}</span>
-          <CopyButton text={skill.install_command} label="Copy" variant="ghost" />
+          <CopyButton text={skill.install_command} label="Copy command" variant="ghost" iconOnly />
         </div>
         <div className="flex flex-wrap gap-2">
           <CopyButton text={promptFor(skill)} label="Copy prompt for an agent" />
           <CopyButton text={skill.content} label="Copy SKILL.md" />
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setOpen(true)}>
-            <FileText />
-            Read
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="ml-auto" aria-label="Read" onClick={() => setOpen(true)}>
+                <FileText />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Read</TooltipContent>
+          </Tooltip>
         </div>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl">
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="font-mono">{skill.name}</DialogTitle>
-            <DialogDescription>{skill.files.join(' · ')}</DialogDescription>
+            <DialogDescription className="sr-only">The skill's SKILL.md</DialogDescription>
           </DialogHeader>
           <pre className="min-h-0 flex-1 overflow-auto rounded-md bg-muted/50 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">{skill.content}</pre>
-          <div className="flex justify-end gap-2">
-            <CopyButton text={skill.content} label="Copy SKILL.md" />
+          <div className="flex justify-end">
+            <CopyButton text={skill.content} label="Copy SKILL.md" iconOnly />
           </div>
         </DialogContent>
       </Dialog>
@@ -61,14 +66,13 @@ export function SkillsPage({ version }: { version: number | null }) {
       <div className="grid gap-1">
         <h1 className="text-xl font-semibold">Skills</h1>
         <p className="text-sm text-muted-foreground">
-          Guides that teach an AI agent to make a kind of image and run it through Ochre. Install one for Claude Code, or copy a prompt that tells
-          an agent to use it.
+          Tell your agent how to use Ochre.
         </p>
       </div>
       <div className="flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs">
         <BookOpen className="size-3.5 text-muted-foreground" />
         <span className="flex-1">ochre skill install --all</span>
-        <CopyButton text="ochre skill install --all" label="Copy" variant="ghost" />
+        <CopyButton text="ochre skill install --all" label="Copy command" variant="ghost" iconOnly />
       </div>
       <div className="grid gap-4">
         {(skills ?? []).map((skill) => (

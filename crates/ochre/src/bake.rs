@@ -44,7 +44,7 @@ pub fn bake(image_bytes: &[u8], round: &Round) -> Result<Vec<u8>> {
     for (index, annotation) in round.annotations.iter().enumerate() {
         let (ax, ay) = annotation.shape.anchor();
         let center = (ax * size.0, ay * size.1);
-        draw_badge(&mut pixmap, &font, center, unit * 4.0, index + 1, &parse_color(&annotation.color));
+        draw_badge(&mut pixmap, &font, center, unit * 2.6, index + 1, &parse_color(&annotation.color));
     }
     legend.draw(&mut pixmap, &font, height as f32);
 
@@ -70,8 +70,8 @@ fn paint(color: Color) -> Paint<'static> {
 
 fn draw_shape(pixmap: &mut Pixmap, annotation: &Annotation, (w, h): (f32, f32), unit: f32) {
     let color = parse_color(&annotation.color);
-    let stroke = Stroke { width: unit * 1.2, line_cap: LineCap::Round, line_join: LineJoin::Round, ..Stroke::default() };
-    let halo = Stroke { width: stroke.width + unit * 1.2, ..stroke.clone() };
+    let stroke = Stroke { width: unit * 0.6, line_cap: LineCap::Round, line_join: LineJoin::Round, ..Stroke::default() };
+    let halo = Stroke { width: stroke.width + unit * 0.8, ..stroke.clone() };
     let mut builder = PathBuilder::new();
     let mut head = None;
     match &annotation.shape {
@@ -90,7 +90,7 @@ fn draw_shape(pixmap: &mut Pixmap, annotation: &Annotation, (w, h): (f32, f32), 
             builder.move_to(sx, sy);
             builder.line_to(ex, ey);
             let angle = (ey - sy).atan2(ex - sx);
-            let length = unit * 6.0;
+            let length = unit * 4.5;
             let mut tip = PathBuilder::new();
             tip.move_to(ex, ey);
             tip.line_to(ex - length * (angle - 0.45).cos(), ey - length * (angle - 0.45).sin());

@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils'
 
 const SAVE_DELAY_MS = 400
 
+type Snapshot = { annotations: Annotation[]; note: string }
+
 const KIND_LABELS: Record<Annotation['kind'], string> = { rect: 'Box', ellipse: 'Circle', arrow: 'Arrow', pen: 'Drawing', pin: 'Pin' }
 
 const isTyping = (event: KeyboardEvent) => {
@@ -92,8 +94,8 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
   const [mode, setMode] = useState<'mark' | 'compare'>(previous && round.annotations.length === 0 ? 'compare' : 'mark')
   const pending = useRef<{ annotations: Annotation[]; note: string } | null>(null)
   // Undo history of the marks. Typing in one mark's note counts as one step.
-  const [past, setPast] = useState<Annotation[][]>([])
-  const [future, setFuture] = useState<Annotation[][]>([])
+  const [past, setPast] = useState<Snapshot[]>([])
+  const [future, setFuture] = useState<Snapshot[]>([])
   const lastNoteEdit = useRef<string | null>(null)
 
   const flush = async () => {
@@ -109,32 +111,37 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
     pending.current = { annotations: next, note: nextNote }
   }
 
-  const change = (next: Annotation[], noteOf: string | null = null) => {
-    if (noteOf === null || noteOf !== lastNoteEdit.current) {
-      setPast([...past, annotations])
+  // `typing` names the text being edited (a mark's id, or 'overall'), so a
+  // run of keystrokes in one box undoes as one step.
+  const change = (next: Annotation[], nextNote = note, typing: string | null = null) => {
+    if (typing === null || typing !== lastNoteEdit.current) {
+      setPast([...past, { annotations, note }])
       setFuture([])
     }
-    lastNoteEdit.current = noteOf
-    update(next)
+    lastNoteEdit.current = typing
+    update(next, nextNote)
+  }
+
+  const restore = (snapshot: Snapshot) => {
+    lastNoteEdit.current = null
+    update(snapshot.annotations, snapshot.note)
+    if (selected && !snapshot.annotations.some((a) => a.id === selected)) setSelected(null)
   }
 
   const undo = () => {
     const previous = past.at(-1)
     if (!previous) return
     setPast(past.slice(0, -1))
-    setFuture([annotations, ...future])
-    lastNoteEdit.current = null
-    update(previous)
-    if (selected && !previous.some((a) => a.id === selected)) setSelected(null)
+    setFuture([{ annotations, note }, ...future])
+    restore(previous)
   }
 
   const redo = () => {
     const [next, ...rest] = future
     if (!next) return
     setFuture(rest)
-    setPast([...past, annotations])
-    lastNoteEdit.current = null
-    update(next)
+    setPast([...past, { annotations, note }])
+    restore(next)
   }
 
   useEffect(() => {
@@ -182,9 +189,9 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
         send()
         return
       }
-      // In a note box, undo is the text's own; elsewhere it's the marks'.
+      // Notes are in the history too, so undo is always the page's, even mid-note.
       const key = event.key.toLowerCase()
-      if (command && (key === 'z' || (key === 'y' && event.ctrlKey)) && !isTyping(event)) {
+      if (command && (key === 'z' || (key === 'y' && event.ctrlKey))) {
         event.preventDefault()
         if (key === 'y' || event.shiftKey) redo()
         else undo()
@@ -294,7 +301,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
                       placeholder="What should change here?"
                       value={a.note}
                       onFocus={() => setSelected(a.id)}
-                      onChange={(e) => change(annotations.map((other) => (other.id === a.id ? { ...other, note: e.target.value } : other)), a.id)}
+                      onChange={(e) => change(annotations.map((other) => (other.id === a.id ? { ...other, note: e.target.value } : other)), note, a.id)}
                       className="min-h-0 resize-none text-sm"
                     />
                   </div>
@@ -303,7 +310,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
             )}
           </Section>
           <Section title="Overall note">
-            <Textarea rows={3} placeholder="Anything that isn't about one spot" value={note} onChange={(e) => update(annotations, e.target.value)} className="resize-none text-sm" />
+            <Textarea rows={3} placeholder="Anything that isn't about one spot" value={note} onChange={(e) => change(annotations, e.target.value, 'overall')} className="resize-none text-sm" />
           </Section>
         </div>
         <div className="grid gap-2 border-t p-4">

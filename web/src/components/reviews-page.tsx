@@ -129,11 +129,11 @@ export function ReviewsPage({ version }: { version: number | null }) {
                 {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
               </Button>
             )}
-            <StartWithAi />
             <Button onClick={() => setDialog({ files: [] })}>
               <Plus />
               New review
             </Button>
+            <StartWithAi />
           </div>
         </div>
         {reviews && shown.length === 0 ? (

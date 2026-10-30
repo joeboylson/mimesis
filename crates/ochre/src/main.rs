@@ -183,7 +183,7 @@ fn run(cli: Cli) -> Result<()> {
             } else {
                 println!("Review {}: {}", review.id, review.title);
                 for item in &review.items {
-                    println!("{:>6}  {:<10}  round {}  {}", item.id, item.state.label(), item.latest().number, item.name);
+                    println!("{:>6}  {:<12}  round {}  {}", item.id, item.state.label(), item.latest().number, item.name);
                 }
             }
             Ok(())

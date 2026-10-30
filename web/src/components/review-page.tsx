@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, CheckCheck, ImagePlus, Terminal, Trash2 } from 'lucide-react'
+import { CheckCheck, ImagePlus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -30,8 +30,8 @@ function ItemCard({ item }: { item: Item }) {
   const marks = round.annotations.length
   return (
     <Card className="cursor-pointer gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md" onClick={() => go(itemHash(item.review_id, item.id))}>
-      <div className="flex aspect-[4/3] items-center justify-center bg-muted p-2">
-        <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={round.annotations} className="size-full" />
+      <div className="relative aspect-square bg-muted">
+        <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={round.annotations} className="absolute inset-0 size-full p-2" />
       </div>
       <div className="grid gap-1.5 p-3">
         <div className="truncate text-sm font-medium">{item.name}</div>
@@ -96,9 +96,6 @@ export function ReviewPage({ review }: { review: Review }) {
                 </Button>
               )}
             </FilePicker>
-            <Button variant="ghost" size="icon" aria-label={review.archived ? 'Unarchive' : 'Archive'} onClick={() => api.updateReview(review.id, { archived: !review.archived })}>
-              {review.archived ? <ArchiveRestore /> : <Archive />}
-            </Button>
             <Button variant="ghost" size="icon" aria-label="Delete review" onClick={() => setConfirmDelete(true)}>
               <Trash2 />
             </Button>
@@ -125,10 +122,6 @@ export function ReviewPage({ review }: { review: Review }) {
                 {label} <span className="text-xs opacity-60">{f === 'all' ? review.items.length : count(f)}</span>
               </button>
             ))}
-          </div>
-          <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-            <Terminal className="size-3.5" />
-            ochre wait --review {review.id} · ochre pull --review {review.id}
           </div>
         </div>
 

@@ -28,8 +28,8 @@ const isLight = (hex: string) => {
 }
 
 function Shape({ a, w, h, unit }: { a: Annotation; w: number; h: number; unit: number }) {
-  const stroke = { stroke: a.color, strokeWidth: unit * 1.2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
-  const halo = { ...stroke, stroke: 'rgba(255,255,255,0.67)', strokeWidth: unit * 2.4 }
+  const stroke = { stroke: a.color, strokeWidth: unit * 0.6, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  const halo = { ...stroke, stroke: 'rgba(255,255,255,0.67)', strokeWidth: unit * 1.4 }
   const draw = (props: typeof stroke) => {
     switch (a.kind) {
       case 'rect':
@@ -39,7 +39,7 @@ function Shape({ a, w, h, unit }: { a: Annotation; w: number; h: number; unit: n
       case 'arrow': {
         const [sx, sy, ex, ey] = [a.x1 * w, a.y1 * h, a.x2 * w, a.y2 * h]
         const angle = Math.atan2(ey - sy, ex - sx)
-        const length = unit * 6
+        const length = unit * 4.5
         const tip = [
           [ex, ey],
           [ex - length * Math.cos(angle - 0.45), ey - length * Math.sin(angle - 0.45)],
@@ -69,13 +69,13 @@ function Shape({ a, w, h, unit }: { a: Annotation; w: number; h: number; unit: n
 }
 
 function NumberBadge({ a, number, w, h, unit, selected }: { a: Annotation; number: number; w: number; h: number; unit: number; selected: boolean }) {
-  const r = unit * 4
+  const r = unit * 2.6
   const [x, y] = anchor(a)
   const cx = Math.min(Math.max(x * w, r), w - r)
   const cy = Math.min(Math.max(y * h, r), h - r)
   return (
     <g>
-      {selected && <circle cx={cx} cy={cy} r={r * 1.5} fill="none" stroke={a.color} strokeWidth={unit} strokeDasharray={`${unit * 2} ${unit * 1.5}`} />}
+      {selected && <circle cx={cx} cy={cy} r={r * 1.5} fill="none" stroke={a.color} strokeWidth={unit * 0.5} strokeDasharray={`${unit * 1.5} ${unit}`} />}
       <circle cx={cx} cy={cy} r={r} fill={a.color} stroke="#fff" strokeWidth={r * 0.18} />
       <text
         x={cx}
