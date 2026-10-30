@@ -74,6 +74,12 @@ is a shot. Cover every kind of page, but only one of each: one list page,
 one detail page, not a shot per record. Use one theme unless the person asks
 for both.
 
+Walk each workflow end to end and shoot the screens *between* the obvious
+pages too: a step that only appears mid-flow (a compare view, an edit mode, a
+confirmation, the page after saving) is the easiest to miss. Use states that
+don't change the person's data; never click something that saves, sends or
+deletes just to reach a screen.
+
 Commit `.ochre/shots.json` if the project wants it; add `.ochre/shots/` to
 `.gitignore`.
 
