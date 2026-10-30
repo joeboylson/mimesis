@@ -1,0 +1,11 @@
+.DS_Store
+
+# Rust build output
+/target/
+
+# Page build output
+/web/node_modules/
+/web/dist/
+
+# Tauri's generated schemas
+/app/src-tauri/gen/

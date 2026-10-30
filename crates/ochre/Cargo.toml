@@ -1,0 +1,27 @@
+[package]
+name = "ochre"
+version = "0.1.0"
+edition = "2021"
+description = "Mark up images, hand them to an AI, and go round until they're right"
+
+[lib]
+name = "ochre"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ochre"
+path = "src/main.rs"
+
+[dependencies]
+ab_glyph = "0.2"
+anyhow = "1"
+axum = "0.8"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+rust-embed = { version = "8", features = ["mime-guess"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tiny-skia = "0.11"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time"] }
