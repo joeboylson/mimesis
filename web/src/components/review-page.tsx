@@ -24,6 +24,34 @@ const FILTERS: { filter: Filter; label: string }[] = [
   { filter: 'approved', label: 'Approved' },
 ]
 
+// The picked tab is kept per review, so a refresh or a trip into an image
+// comes back to the same tab.
+const filterKey = (reviewId: number) => `mimesis-filter-${reviewId}`
+
+function savedFilter(reviewId: number): Filter {
+  try {
+    const saved = localStorage.getItem(filterKey(reviewId))
+    if (FILTERS.some(({ filter }) => filter === saved)) return saved as Filter
+  } catch {
+    // Storage can be blocked; the default tab is fine then.
+  }
+  return 'all'
+}
+
+function useFilter(reviewId: number) {
+  const [filter, setFilter] = useState<Filter>(() => savedFilter(reviewId))
+  useEffect(() => setFilter(savedFilter(reviewId)), [reviewId])
+  const pick = (next: Filter) => {
+    setFilter(next)
+    try {
+      localStorage.setItem(filterKey(reviewId), next)
+    } catch {
+      // Not saved; the tab still changes for now.
+    }
+  }
+  return [filter, pick] as const
+}
+
 function ItemCard({ item }: { item: Item }) {
   const round = latest(item)
   return (
@@ -57,7 +85,7 @@ function Title({ review }: { review: Review }) {
 }
 
 export function ReviewPage({ review }: { review: Review }) {
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useFilter(review.id)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const allApproved = review.items.length > 0 && review.items.every((item) => item.state === 'approved')
   const shown = review.items.filter((item) => filter === 'all' || item.state === filter)
