@@ -61,7 +61,7 @@ export default function App() {
           {route.page === 'review' && <ReviewRoute id={route.id} itemId={route.item} version={version} />}
         </main>
       </div>
-      <Toaster />
+      <Toaster position="bottom-left" />
     </TooltipProvider>
   )
 }
