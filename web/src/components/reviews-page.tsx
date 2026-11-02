@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { DropZone, FilePicker } from '@/components/drop-zone'
+import { STATE_COLORS } from '@/components/state-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -100,11 +101,11 @@ function ReviewCard({ review }: { review: ReviewSummary }) {
       <div className="grid gap-2 p-3">
         <div className="truncate font-medium">{review.title}</div>
         <div className="flex flex-wrap gap-1">
-          {review.needs_review > 0 && <Badge>{review.needs_review} need review</Badge>}
-          {review.reviewed > 0 && <Badge variant="secondary">{review.reviewed} reviewed</Badge>}
-          {review.approved > 0 && <Badge variant="outline">{review.approved} approved</Badge>}
+          {review.archived && <Badge variant="ghost">Finished</Badge>}
+          {review.needs_review > 0 && <Badge variant="outline" className={STATE_COLORS.needs_review}>{review.needs_review} need review</Badge>}
+          {review.reviewed > 0 && <Badge variant="outline" className={STATE_COLORS.reviewed}>{review.reviewed} reviewed</Badge>}
+          {review.approved > 0 && <Badge variant="outline" className={STATE_COLORS.approved}>{review.approved} approved</Badge>}
           {review.total === 0 && <Badge variant="outline">No images</Badge>}
-          {review.archived && <Badge variant="ghost">Archived</Badge>}
         </div>
       </div>
     </Card>
@@ -126,7 +127,7 @@ export function ReviewsPage({ version }: { version: number | null }) {
           <div className="flex items-center gap-2">
             {archivedCount > 0 && (
               <Button variant="ghost" size="sm" onClick={() => setShowArchived(!showArchived)}>
-                {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+                {showArchived ? 'Hide finished' : `Show finished (${archivedCount})`}
               </Button>
             )}
             <Button onClick={() => setDialog({ files: [] })}>

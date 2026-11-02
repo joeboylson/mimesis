@@ -1,11 +1,13 @@
-import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, PenLine, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, MoreHorizontal, PenLine, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Annotator, TOOLS, Toolbar, type Tool } from '@/components/annotator'
+import { ConfirmDelete } from '@/components/confirm-delete'
 import { COLORS, MarkedImage } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 import { api, imageUrl, latest, type Annotation, type Item, type Review, type Round } from '@/lib/api'
 import { go, itemHash, reviewHash } from '@/lib/route'
@@ -14,6 +16,8 @@ import { cn } from '@/lib/utils'
 const SAVE_DELAY_MS = 400
 
 type Snapshot = { annotations: Annotation[]; note: string }
+
+type Mode = 'mark' | 'compare'
 
 const KIND_LABELS: Record<Annotation['kind'], string> = { rect: 'Box', ellipse: 'Circle', arrow: 'Arrow', pen: 'Drawing', pin: 'Pin' }
 
@@ -39,6 +43,47 @@ function NumberDot({ number, color }: { number: number; color: string }) {
     <span className="flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-1 ring-border" style={{ background: color, color: color === '#ffffff' || color === '#eab308' ? '#000' : '#fff' }}>
       {number}
     </span>
+  )
+}
+
+// Sits at the bottom of the image area so the header stays about the image.
+function RoundPager({ item, round, onPick }: { item: Item; round: Round; onPick: (number: number) => void }) {
+  if (item.rounds.length < 2) return null
+  const at = item.rounds.findIndex((r) => r.id === round.id)
+  const before = item.rounds[at - 1]
+  const after = item.rounds[at + 1]
+  return (
+    <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center">
+      <div className="flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
+        <Button variant="ghost" size="icon-sm" aria-label="Previous round" disabled={!before} onClick={() => before && onPick(before.number)}>
+          <ChevronLeft />
+        </Button>
+        <span className="px-1 text-xs text-muted-foreground">Round</span>
+        {item.rounds.map((r) => (
+          <Button key={r.id} variant={r.id === round.id ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => onPick(r.number)}>
+            {r.number}
+          </Button>
+        ))}
+        <Button variant="ghost" size="icon-sm" aria-label="Next round" disabled={!after} onClick={() => after && onPick(after.number)}>
+          <ChevronRight />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ModeToggle({ mode, setMode }: { mode: Mode; setMode: (mode: Mode) => void }) {
+  return (
+    <div className="flex gap-1 rounded-lg bg-muted p-1">
+      <Button variant={mode === 'compare' ? 'outline' : 'ghost'} size="xs" onClick={() => setMode('compare')}>
+        <Columns2 />
+        Compare
+      </Button>
+      <Button variant={mode === 'mark' ? 'outline' : 'ghost'} size="xs" onClick={() => setMode('mark')}>
+        <PenLine />
+        Mark up
+      </Button>
+    </div>
   )
 }
 
@@ -84,14 +129,29 @@ function Section({ title, children, action }: { title: string; children: React.R
 
 // The round the person is marking up. Its marks live here and are saved as
 // they change, so a reload from the server never wipes what's being typed.
-function EditRound({ review, item, round, previous }: { review: Review; item: Item; round: Round; previous: Round | null }) {
+function EditRound({
+  review,
+  item,
+  round,
+  previous,
+  mode,
+  setMode,
+  pager,
+}: {
+  review: Review
+  item: Item
+  round: Round
+  previous: Round | null
+  mode: Mode
+  setMode: (mode: Mode) => void
+  pager: React.ReactNode
+}) {
   const [annotations, setAnnotations] = useState(round.annotations)
   const [note, setNote] = useState(round.note)
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const [tool, setTool] = useState<Tool>('rect')
   const [color, setColor] = useState(COLORS[0])
-  const [mode, setMode] = useState<'mark' | 'compare'>(previous && round.annotations.length === 0 ? 'compare' : 'mark')
   const pending = useRef<{ annotations: Annotation[]; note: string } | null>(null)
   // Undo history of the marks. Typing in one mark's note counts as one step.
   const [past, setPast] = useState<Snapshot[]>([])
@@ -216,18 +276,6 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
         <div className="absolute inset-x-0 top-3 z-10 flex justify-center gap-2">
-          {previous && (
-            <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
-              <Button variant={mode === 'compare' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('compare')}>
-                <Columns2 />
-                Compare
-              </Button>
-              <Button variant={mode === 'mark' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('mark')}>
-                <PenLine />
-                Mark up
-              </Button>
-            </div>
-          )}
           {mode === 'mark' && <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} />}
           {mode === 'mark' && (
             <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
@@ -241,7 +289,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
           )}
         </div>
         {mode === 'mark' || !previous ? (
-          <div className="absolute inset-4 top-16">
+          <div className={cn('absolute inset-4 top-16', pager && 'bottom-16')}>
             <Annotator
               src={imageUrl(round.image)}
               width={round.width}
@@ -256,7 +304,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
             />
           </div>
         ) : (
-          <div className="absolute inset-4 top-16 grid grid-cols-2 gap-4">
+          <div className={cn('absolute inset-4 grid grid-cols-2 gap-4', pager && 'bottom-16')}>
             <figure className="flex min-h-0 flex-col gap-2">
               <figcaption className="text-center text-xs text-muted-foreground">Round {previous.number}: your marks</figcaption>
               <MarkedImage src={imageUrl(previous.image)} width={previous.width} height={previous.height} annotations={previous.annotations} className="min-h-0 flex-1" />
@@ -267,6 +315,7 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
             </figure>
           </div>
         )}
+        {pager}
       </div>
 
       <aside className="flex w-80 shrink-0 flex-col border-l">
@@ -329,14 +378,15 @@ function EditRound({ review, item, round, previous }: { review: Review; item: It
   )
 }
 
-function ViewRound({ item, round, isLatest }: { item: Item; round: Round; isLatest: boolean }) {
+function ViewRound({ item, round, isLatest, pager }: { item: Item; round: Round; isLatest: boolean; pager: React.ReactNode }) {
   const action = (call: Promise<unknown>) => call.catch((e) => toast.error(e.message))
   return (
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
-        <div className="absolute inset-4">
+        <div className={cn('absolute inset-4', pager && 'bottom-16')}>
           <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={round.annotations} className="size-full" />
         </div>
+        {pager}
       </div>
       <aside className="flex w-80 shrink-0 flex-col border-l">
         <div className="grid flex-1 content-start gap-5 overflow-y-auto p-4">
@@ -394,6 +444,13 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
   const round = item.rounds.find((r) => r.number === viewing) ?? current
   const isLatest = round.id === current.id
   const previous = item.rounds.find((r) => r.number === current.number - 1) ?? null
+  const editing = isLatest && item.state === 'needs_review'
+  const startMode = (): Mode => (previous && current.annotations.length === 0 ? 'compare' : 'mark')
+  const [mode, setMode] = useState<Mode>(startMode)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setMode(startMode()), [current.id])
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const pager = <RoundPager item={item} round={round} onPick={setViewing} />
 
   const index = review.items.findIndex((i) => i.id === item.id)
   const prev = review.items[index - 1]
@@ -417,17 +474,25 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
         </Button>
         <div className="min-w-0 truncate font-medium">{item.name}</div>
         <StateBadge state={item.state} />
-        <div className="ml-2 flex items-center gap-1">
-          {item.rounds.map((r) => (
-            <Button key={r.id} variant={r.id === round.id ? 'secondary' : 'ghost'} size="xs" onClick={() => setViewing(r.number)}>
-              R{r.number}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Image menu">
+              <MoreHorizontal />
             </Button>
-          ))}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+              <Trash2 />
+              Delete image
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {editing && previous && (
+          <div className="ml-4">
+            <ModeToggle mode={mode} setMode={setMode} />
+          </div>
+        )}
         <div className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
-          <Button variant="ghost" size="icon-sm" aria-label="Delete image" onClick={() => api.deleteItem(item.id).then(() => go(reviewHash(review.id)))}>
-            <Trash2 />
-          </Button>
           <Button variant="ghost" size="icon-sm" disabled={!prev} aria-label="Previous image" onClick={() => prev && go(itemHash(review.id, prev.id))}>
             <ChevronLeft />
           </Button>
@@ -440,12 +505,19 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
         </div>
       </div>
       <div className="flex min-h-0 flex-1">
-        {isLatest && item.state === 'needs_review' ? (
-          <EditRound key={round.id} review={review} item={item} round={round} previous={previous} />
+        {editing ? (
+          <EditRound key={round.id} review={review} item={item} round={round} previous={previous} mode={mode} setMode={setMode} pager={pager} />
         ) : (
-          <ViewRound item={item} round={round} isLatest={isLatest} />
+          <ViewRound item={item} round={round} isLatest={isLatest} pager={pager} />
         )}
       </div>
+      <ConfirmDelete
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Delete ${item.name}?`}
+        description={`All ${item.rounds.length} round${item.rounds.length === 1 ? '' : 's'} of this image go with it. This can't be undone.`}
+        onConfirm={() => api.deleteItem(item.id).then(() => go(reviewHash(review.id)))}
+      />
     </div>
   )
 }

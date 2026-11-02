@@ -1,13 +1,14 @@
-import { CheckCheck, ImagePlus, Trash2 } from 'lucide-react'
+import { CheckCheck, ImagePlus, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDelete } from '@/components/confirm-delete'
 import { DropZone, FilePicker } from '@/components/drop-zone'
 import { MarkedImage } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { addImages, api, imageUrl, latest, type Item, type ItemState, type Review } from '@/lib/api'
@@ -23,23 +24,16 @@ const FILTERS: { filter: Filter; label: string }[] = [
   { filter: 'approved', label: 'Approved' },
 ]
 
-export const hasMarks = (item: Item) => item.state === 'needs_review' && (latest(item).annotations.length > 0 || latest(item).note.trim() !== '')
-
 function ItemCard({ item }: { item: Item }) {
   const round = latest(item)
-  const marks = round.annotations.length
   return (
     <Card className="cursor-pointer gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md" onClick={() => go(itemHash(item.review_id, item.id))}>
       <div className="relative aspect-square bg-muted">
         <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={round.annotations} className="absolute inset-0 size-full p-2" />
+        <StateBadge state={item.state} className="absolute top-2 right-2 shadow-sm" />
       </div>
-      <div className="grid gap-1.5 p-3">
+      <div className="p-3">
         <div className="truncate text-sm font-medium">{item.name}</div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <StateBadge state={item.state} />
-          <span>Round {round.number}</span>
-          {marks > 0 && <span>· {marks} mark{marks === 1 ? '' : 's'}</span>}
-        </div>
       </div>
     </Card>
   )
@@ -57,7 +51,7 @@ function Title({ review }: { review: Review }) {
       onChange={(e) => setTitle(e.target.value)}
       onBlur={save}
       onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-      className="h-9 max-w-md border-transparent bg-transparent px-1 text-xl font-semibold shadow-none hover:border-input dark:bg-transparent"
+      className="field-sizing-content h-9 w-auto max-w-md min-w-24 border-transparent bg-transparent px-1 text-xl font-semibold shadow-none hover:border-input dark:bg-transparent"
     />
   )
 }
@@ -65,7 +59,7 @@ function Title({ review }: { review: Review }) {
 export function ReviewPage({ review }: { review: Review }) {
   const [filter, setFilter] = useState<Filter>('all')
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const ready = review.items.filter(hasMarks)
+  const allApproved = review.items.length > 0 && review.items.every((item) => item.state === 'approved')
   const shown = review.items.filter((item) => filter === 'all' || item.state === filter)
   const count = (state: ItemState) => review.items.filter((item) => item.state === state).length
 
@@ -76,8 +70,11 @@ export function ReviewPage({ review }: { review: Review }) {
 
   const finish = () =>
     api
-      .sendAll(review.id)
-      .then(({ sent }) => toast.success(`Marked ${sent.length} image${sent.length === 1 ? '' : 's'} as reviewed`))
+      .updateReview(review.id, { archived: true })
+      .then(() => {
+        toast.success(`Finished “${review.title}”`)
+        go('#/')
+      })
       .catch((e) => toast.error(e.message))
 
   const firstNeedsReview = review.items.find((item) => item.state === 'needs_review')
@@ -86,7 +83,22 @@ export function ReviewPage({ review }: { review: Review }) {
     <DropZone label="Drop to add images" onFiles={upload}>
       <div className="mx-auto grid w-full max-w-7xl content-start gap-5 overflow-y-auto p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Title review={review} />
+          <div className="flex min-w-0 items-center gap-1">
+            <Title review={review} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Review menu">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+                  <Trash2 />
+                  Delete review
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <div className="flex items-center gap-2">
             <FilePicker onFiles={upload}>
               {(pick) => (
@@ -96,17 +108,14 @@ export function ReviewPage({ review }: { review: Review }) {
                 </Button>
               )}
             </FilePicker>
-            <Button variant="ghost" size="icon" aria-label="Delete review" onClick={() => setConfirmDelete(true)}>
-              <Trash2 />
-            </Button>
             {firstNeedsReview && (
               <Button variant="outline" onClick={() => go(itemHash(review.id, firstNeedsReview.id))}>
                 Start marking up
               </Button>
             )}
-            <Button onClick={finish} disabled={ready.length === 0}>
+            <Button onClick={finish} disabled={!allApproved || review.archived} title={allApproved ? undefined : 'Approve every image first'}>
               <CheckCheck />
-              Finish review{ready.length ? ` (${ready.length})` : ''}
+              {review.archived ? 'Finished' : 'Finish review'}
             </Button>
           </div>
         </div>
@@ -146,22 +155,13 @@ export function ReviewPage({ review }: { review: Review }) {
         )}
       </div>
 
-      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete “{review.title}”?</DialogTitle>
-            <DialogDescription>Its {review.items.length} images and every round go with it. This can't be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button variant="destructive" onClick={() => api.deleteReview(review.id).then(() => go('#/'))}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDelete
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Delete “${review.title}”?`}
+        description={`Its ${review.items.length} images and every round go with it. This can't be undone.`}
+        onConfirm={() => api.deleteReview(review.id).then(() => go('#/'))}
+      />
     </DropZone>
   )
 }
