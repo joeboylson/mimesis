@@ -10,8 +10,8 @@ import { api, type Skill } from '@/lib/api'
 
 // What to paste to an agent that should run the skill now.
 const promptFor = (skill: Skill) =>
-  `Use the ${skill.name} skill (if it isn't installed, run \`${skill.install_command}\` first, or read it with \`ochre skill show ${skill.id}\`). ` +
-  `Make the images it describes for what I'm working on, put them in an Ochre review, and go round with me until I approve every one.`
+  `Use the ${skill.name} skill (if it isn't installed, run \`${skill.install_command}\` first, or read it with \`mimesis skill show ${skill.id}\`). ` +
+  `Make the images it describes for what I'm working on, put them in a Mimesis review, and go round with me until I approve every one.`
 
 function SkillCard({ skill }: { skill: Skill }) {
   const [open, setOpen] = useState(false)
@@ -66,13 +66,13 @@ export function SkillsPage({ version }: { version: number | null }) {
       <div className="grid gap-1">
         <h1 className="text-xl font-semibold">Skills</h1>
         <p className="text-sm text-muted-foreground">
-          Tell your agent how to use Ochre.
+          Tell your agent how to use Mimesis.
         </p>
       </div>
       <div className="flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs">
         <BookOpen className="size-3.5 text-muted-foreground" />
-        <span className="flex-1">ochre skill install --all</span>
-        <CopyButton text="ochre skill install --all" label="Copy command" variant="ghost" iconOnly />
+        <span className="flex-1">mimesis skill install --all</span>
+        <CopyButton text="mimesis skill install --all" label="Copy command" variant="ghost" iconOnly />
       </div>
       <div className="grid gap-4">
         {(skills ?? []).map((skill) => (

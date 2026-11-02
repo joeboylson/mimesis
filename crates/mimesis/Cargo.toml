@@ -1,15 +1,15 @@
 [package]
-name = "ochre"
+name = "mimesis"
 version = "0.1.0"
 edition = "2021"
 description = "Mark up images, hand them to an AI, and go round until they're right"
 
 [lib]
-name = "ochre"
+name = "mimesis"
 path = "src/lib.rs"
 
 [[bin]]
-name = "ochre"
+name = "mimesis"
 path = "src/main.rs"
 
 [dependencies]

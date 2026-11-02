@@ -10,6 +10,6 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
-  // `npm run dev` talks to `ochre serve`.
+  // `npm run dev` talks to `mimesis serve`.
   server: { proxy: { '/api': 'http://127.0.0.1:4620' } },
 })

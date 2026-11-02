@@ -2117,6 +2117,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "mimesis"
+version = "0.1.0"
+dependencies = [
+ "ab_glyph",
+ "anyhow",
+ "axum",
+ "clap",
+ "image",
+ "rusqlite",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tiny-skia",
+ "tokio",
+]
+
+[[package]]
+name = "mimesis-app"
+version = "0.1.0"
+dependencies = [
+ "mimesis",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2445,33 +2472,6 @@ dependencies = [
  "objc2-app-kit",
  "objc2-core-foundation",
  "objc2-foundation",
-]
-
-[[package]]
-name = "ochre"
-version = "0.1.0"
-dependencies = [
- "ab_glyph",
- "anyhow",
- "axum",
- "clap",
- "image",
- "rusqlite",
- "rust-embed",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tiny-skia",
- "tokio",
-]
-
-[[package]]
-name = "ochre-app"
-version = "0.1.0"
-dependencies = [
- "ochre",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]

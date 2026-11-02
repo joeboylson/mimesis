@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="ochre-theme">
+    <ThemeProvider defaultTheme="system" storageKey="mimesis-theme">
       <App />
     </ThemeProvider>
   </StrictMode>,

@@ -2,10 +2,10 @@
 // Takes the same screenshots the same way every time, from a shot list, so
 // two rounds of a screen differ only by what changed in the code.
 //
-//   node capture.mjs .ochre/shots.json [--only <name>[,<name>…]]
+//   node capture.mjs .mimesis/shots.json [--only <name>[,<name>…]]
 //
-// Needs Playwright, from the project or from ~/.ochre/capture:
-//   npm i --prefix ~/.ochre/capture playwright && npx --prefix ~/.ochre/capture playwright install chromium
+// Needs Playwright, from the project or from ~/.mimesis/capture:
+//   npm i --prefix ~/.mimesis/capture playwright && npx --prefix ~/.mimesis/capture playwright install chromium
 
 import { mkdirSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -22,12 +22,12 @@ const FREEZE_CSS = `
 `
 
 function loadPlaywright() {
-  for (const base of [join(process.cwd(), 'x'), join(homedir(), '.ochre', 'capture', 'x')]) {
+  for (const base of [join(process.cwd(), 'x'), join(homedir(), '.mimesis', 'capture', 'x')]) {
     try {
       return createRequire(base)('playwright')
     } catch {}
   }
-  console.error('Playwright not found. Set it up once:\n  npm i --prefix ~/.ochre/capture playwright && npx --prefix ~/.ochre/capture playwright install chromium')
+  console.error('Playwright not found. Set it up once:\n  npm i --prefix ~/.mimesis/capture playwright && npx --prefix ~/.mimesis/capture playwright install chromium')
   process.exit(1)
 }
 
@@ -62,7 +62,7 @@ async function main() {
   const config = JSON.parse(readFileSync(file, 'utf8'))
   const root = dirname(file)
   // Run from the project root: a relative "out" is from there, like the paths in the skill.
-  const out = resolve(config.out ?? '.ochre/shots')
+  const out = resolve(config.out ?? '.mimesis/shots')
   mkdirSync(out, { recursive: true })
 
   const viewports = config.viewports ?? { desktop: [1440, 900] }

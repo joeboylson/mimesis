@@ -1,6 +1,6 @@
 {
   "baseUrl": "http://localhost:5173",
-  "out": ".ochre/shots",
+  "out": ".mimesis/shots",
   "viewports": { "desktop": [1440, 900], "mobile": [390, 844] },
   "colorSchemes": ["light"],
   "shots": [

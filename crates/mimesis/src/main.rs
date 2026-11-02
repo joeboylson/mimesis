@@ -1,4 +1,4 @@
-//! The ochre command: what an AI (or a person at a terminal) uses to open
+//! The mimesis command: what an AI (or a person at a terminal) uses to open
 //! reviews, pick up marked-up images, and answer them with new ones. It
 //! works on the same files as the page, so the server needn't be running.
 
@@ -10,10 +10,10 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use ochre::{bake, model::Request, paths, server, skills, store::Store};
+use mimesis::{bake, model::Request, paths, server, skills, store::Store};
 
 #[derive(Parser)]
-#[command(name = "ochre", version = VERSION_TEXT, about = "Mark up images, hand them to an AI, and go round until they're right.")]
+#[command(name = "mimesis", version = VERSION_TEXT, about = "Mark up images, hand them to an AI, and go round until they're right.")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Cmd>,
@@ -25,7 +25,7 @@ enum Cmd {
     Open,
     /// Run the server in the foreground (the page and its API)
     Serve {
-        #[arg(long, env = "OCHRE_PORT", default_value_t = paths::DEFAULT_PORT)]
+        #[arg(long, env = "MIMESIS_PORT", default_value_t = paths::DEFAULT_PORT)]
         port: u16,
     },
     /// Start a review, optionally with images
@@ -64,7 +64,7 @@ enum Cmd {
         items: Vec<i64>,
         #[arg(long)]
         review: Option<i64>,
-        /// Folder to write to (default: ~/.ochre/out)
+        /// Folder to write to (default: ~/.mimesis/out)
         #[arg(long)]
         out: Option<PathBuf>,
         #[arg(long)]
@@ -90,9 +90,9 @@ enum Cmd {
     },
     /// Approve an item
     Approve { item: i64 },
-    /// How an AI should use ochre
+    /// How an AI should use mimesis
     Guide,
-    /// Skills that teach an AI to make a kind of image and run it through ochre
+    /// Skills that teach an AI to make a kind of image and run it through mimesis
     #[command(subcommand)]
     Skill(SkillCmd),
     /// Pull the latest code and reinstall
@@ -108,7 +108,7 @@ enum SkillCmd {
     },
     /// Print a skill's SKILL.md
     Show { id: String },
-    /// Install skills into ~/.claude/skills (as ochre-<id>)
+    /// Install skills into ~/.claude/skills (as mimesis-<id>)
     Install {
         ids: Vec<String>,
         #[arg(long)]
@@ -121,11 +121,11 @@ enum SkillCmd {
     Update,
 }
 
-const VERSION_TEXT: &str = concat!(env!("CARGO_PKG_VERSION"), " (built ", env!("OCHRE_BUILT"), ")");
+const VERSION_TEXT: &str = concat!(env!("CARGO_PKG_VERSION"), " (built ", env!("MIMESIS_BUILT"), ")");
 
 fn main() {
     if let Err(error) = run(Cli::parse()) {
-        eprintln!("ochre: {error:#}");
+        eprintln!("mimesis: {error:#}");
         std::process::exit(1);
     }
 }
@@ -138,7 +138,7 @@ fn run(cli: Cli) -> Result<()> {
     match command {
         Cmd::Open => open(),
         Cmd::Serve { port } => {
-            println!("Ochre is on {}", paths::address(port));
+            println!("Mimesis is on {}", paths::address(port));
             tokio::runtime::Runtime::new()?.block_on(server::serve(port))
         }
         Cmd::New { title, images, json } => {
@@ -168,7 +168,7 @@ fn run(cli: Cli) -> Result<()> {
             if json {
                 println!("{}", serde_json::to_string_pretty(&reviews)?);
             } else if reviews.is_empty() {
-                println!("No reviews yet. Start one: ochre new \"Title\" image.png …");
+                println!("No reviews yet. Start one: mimesis new \"Title\" image.png …");
             } else {
                 for r in reviews {
                     println!("{:>4}  {}  ({} images: {} need review, {} reviewed, {} approved)", r.id, r.title, r.total, r.needs_review, r.reviewed, r.approved);
@@ -239,7 +239,7 @@ fn skill(command: SkillCmd) -> Result<()> {
                 let mark = if skill.installed { "installed" } else { "" };
                 println!("{:<12} {:<10} {}", skill.id, mark, skill.description);
             }
-            println!("\nInstall with: ochre skill install <id>   (into {})", skills::skills_dir().display());
+            println!("\nInstall with: mimesis skill install <id>   (into {})", skills::skills_dir().display());
             Ok(())
         }
         SkillCmd::Show { id } => {
@@ -250,7 +250,7 @@ fn skill(command: SkillCmd) -> Result<()> {
             let dir = dir.unwrap_or_else(skills::skills_dir);
             let ids: Vec<String> = if all { skills::list().into_iter().map(|s| s.id).collect() } else { ids };
             if ids.is_empty() {
-                bail!("name a skill (ochre skill list), or pass --all");
+                bail!("name a skill (mimesis skill list), or pass --all");
             }
             for id in ids {
                 println!("Installed {}", skills::install(&id, &dir)?.display());
@@ -349,7 +349,7 @@ fn open() -> Result<()> {
         let started = Instant::now();
         while !server::is_running(port) {
             if started.elapsed() > Duration::from_secs(5) {
-                bail!("the server didn't start; run `ochre serve` to see why");
+                bail!("the server didn't start; run `mimesis serve` to see why");
             }
             std::thread::sleep(Duration::from_millis(100));
         }
@@ -362,9 +362,9 @@ fn open() -> Result<()> {
 }
 
 fn update() -> Result<()> {
-    let script = Path::new(ochre::REPO).join("update.sh");
+    let script = Path::new(mimesis::REPO).join("update.sh");
     if !script.exists() {
-        bail!("can't find {}; clone https://github.com/joeboylson/ochre and run ./install.sh", script.display());
+        bail!("can't find {}; clone https://github.com/joeboylson/mimesis and run ./install.sh", script.display());
     }
     let status = Command::new("sh").arg(&script).status()?;
     if !status.success() {
@@ -374,7 +374,7 @@ fn update() -> Result<()> {
 }
 
 const GUIDE: &str = "\
-Ochre: a person marks up images; you answer with new images; repeat until they approve.
+Mimesis: a person marks up images; you answer with new images; repeat until they approve.
 
 A review holds images. Each image (an item) goes round by round:
   needs review   the person looks at it, marks it up, or approves it
@@ -382,28 +382,28 @@ A review holds images. Each image (an item) goes round by round:
   approved   done
 
 For an AI:
-  ochre new \"Title\" a.png b.png   start a review with images (prints its id)
-  ochre add <review> c.png         add more images
-  ochre wait --review <id>         block until the person finishes reviewing something
-  ochre pull --review <id>         save each reviewed item's image with the marks drawn in,
+  mimesis new \"Title\" a.png b.png   start a review with images (prints its id)
+  mimesis add <review> c.png         add more images
+  mimesis wait --review <id>         block until the person finishes reviewing something
+  mimesis pull --review <id>         save each reviewed item's image with the marks drawn in,
                                    plus request.json (every mark's note and pixel area)
-  ochre respond <item> new.png -n \"what changed\"
+  mimesis respond <item> new.png -n \"what changed\"
                                    answer with a new image; the person sees it beside the last one
-  ochre inbox --json               what's waiting, as JSON
-  ochre show <review>              where every item stands
+  mimesis inbox --json               what's waiting, as JSON
+  mimesis show <review>              where every item stands
 
-Look at marked.png from `ochre pull`: numbered badges sit on each mark, and the notes are
+Look at marked.png from `mimesis pull`: numbered badges sit on each mark, and the notes are
 listed under the image against those numbers. Make one new image per item, answer each with
-`ochre respond`, then `ochre wait` again. Items the person approves drop out.
+`mimesis respond`, then `mimesis wait` again. Items the person approves drop out.
 
 Skills: step-by-step guides for a kind of image (UI screenshots, …), including the loop above.
-  ochre skill list                 what's available
-  ochre skill show ui              read one now
-  ochre skill install ui           install it for Claude Code (~/.claude/skills/ochre-ui)
+  mimesis skill list                 what's available
+  mimesis skill show ui              read one now
+  mimesis skill install ui           install it for Claude Code (~/.claude/skills/mimesis-ui)
 
 For a person:
-  ochre open                       open the page (starts the server if needed)
-  ochre update                     pull the latest code and reinstall
+  mimesis open                       open the page (starts the server if needed)
+  mimesis update                     pull the latest code and reinstall
 
-HTTP, on http://127.0.0.1:4620 (OCHRE_PORT): GET /api/inbox, GET /api/rounds/<id>/baked.png,
+HTTP, on http://127.0.0.1:4620 (MIMESIS_PORT): GET /api/inbox, GET /api/rounds/<id>/baked.png,
 POST /api/items/<id>/respond?note=… with the image as the body.";

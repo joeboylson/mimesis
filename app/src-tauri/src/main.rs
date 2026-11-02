@@ -1,12 +1,12 @@
-//! The Ochre app: starts Ochre's server if nothing is running on its port,
+//! The Mimesis app: starts Mimesis's server if nothing is running on its port,
 //! then opens a window onto it. The page is the same one a browser gets, so
-//! the app and `ochre open` never drift apart.
+//! the app and `mimesis open` never drift apart.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::time::{Duration, Instant};
 
-use ochre::{paths, server};
+use mimesis::{paths, server};
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 const START_TIMEOUT: Duration = Duration::from_secs(5);
@@ -18,7 +18,7 @@ fn main() {
             if !server::is_running(port) {
                 tauri::async_runtime::spawn(async move {
                     if let Err(error) = server::serve(port).await {
-                        eprintln!("ochre: {error:#}");
+                        eprintln!("mimesis: {error:#}");
                     }
                 });
                 let started = Instant::now();
@@ -28,12 +28,12 @@ fn main() {
             }
             let address = paths::address(port).parse()?;
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(address))
-                .title("Ochre")
+                .title("Mimesis")
                 .inner_size(1440.0, 900.0)
                 .min_inner_size(900.0, 600.0)
                 .build()?;
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("Ochre couldn't start");
+        .expect("Mimesis couldn't start");
 }

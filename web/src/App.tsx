@@ -8,7 +8,7 @@ import { SkillsPage } from '@/components/skills-page'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { useReview, useVersion } from '@/hooks/use-ochre'
+import { useReview, useVersion } from '@/hooks/use-mimesis'
 import { go, reviewHash, useRoute } from '@/lib/route'
 
 function ReviewRoute({ id, itemId, version }: { id: number; itemId: number | null; version: number | null }) {
@@ -30,7 +30,7 @@ export default function App() {
         <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
           <button onClick={() => go('#/')} className="flex items-center gap-2 font-semibold">
             <img src="/favicon.png" alt="" className="size-5" />
-            Ochre
+            Mimesis
           </button>
           {route.page === 'review' && (
             <button onClick={() => go(reviewHash(route.id))} className="text-sm text-muted-foreground hover:text-foreground">

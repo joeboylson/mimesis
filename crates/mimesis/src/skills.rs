@@ -1,6 +1,6 @@
 //! Skills that teach an AI agent to make a kind of image and run it through
-//! Ochre. They live in the repo's skills/ folder and are built into the
-//! binary, so `ochre skill install` works anywhere ochre is installed.
+//! Mimesis. They live in the repo's skills/ folder and are built into the
+//! binary, so `mimesis skill install` works anywhere mimesis is installed.
 
 use std::path::{Path, PathBuf};
 
@@ -12,13 +12,13 @@ use serde::Serialize;
 #[folder = "../../skills"]
 struct Files;
 
-/// Installed skills are named ochre-<folder>, so they sort together and
+/// Installed skills are named mimesis-<folder>, so they sort together and
 /// never clash with the person's own.
-pub const PREFIX: &str = "ochre-";
+pub const PREFIX: &str = "mimesis-";
 
 #[derive(Serialize, Clone, Debug)]
 pub struct Skill {
-    /// The folder name: what `ochre skill install <id>` takes.
+    /// The folder name: what `mimesis skill install <id>` takes.
     pub id: String,
     /// The name an agent knows it by.
     pub name: String,
@@ -52,7 +52,7 @@ pub fn list() -> Vec<Skill> {
 }
 
 pub fn get(id: &str) -> Result<Skill> {
-    let file = Files::get(&format!("{id}/SKILL.md")).ok_or_else(|| anyhow!("skill {id} not found; `ochre skill list` shows them"))?;
+    let file = Files::get(&format!("{id}/SKILL.md")).ok_or_else(|| anyhow!("skill {id} not found; `mimesis skill list` shows them"))?;
     let content = String::from_utf8_lossy(&file.data).into_owned();
     let name = front_matter(&content, "name").unwrap_or_else(|| format!("{PREFIX}{id}"));
     let prefix = format!("{id}/");
@@ -61,7 +61,7 @@ pub fn get(id: &str) -> Result<Skill> {
         id: id.to_string(),
         description: front_matter(&content, "description").unwrap_or_default(),
         installed: skills_dir().join(&name).join("SKILL.md").exists(),
-        install_command: format!("ochre skill install {id}"),
+        install_command: format!("mimesis skill install {id}"),
         name,
         files,
         content,
@@ -91,14 +91,14 @@ mod tests {
     #[test]
     fn the_ui_skill_is_built_in_with_its_script() {
         let skill = get("ui").unwrap();
-        assert_eq!(skill.name, "ochre-ui");
+        assert_eq!(skill.name, "mimesis-ui");
         assert!(!skill.description.is_empty());
         assert!(skill.files.contains(&"capture.mjs".to_string()));
     }
 
     #[test]
     fn install_writes_every_file() {
-        let dir = std::env::temp_dir().join(format!("ochre-skills-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("mimesis-skills-{}", std::process::id()));
         let target = install("ui", &dir).unwrap();
         assert!(target.join("SKILL.md").exists() && target.join("capture.mjs").exists());
         std::fs::remove_dir_all(dir).ok();

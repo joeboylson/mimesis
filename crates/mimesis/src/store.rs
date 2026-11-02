@@ -70,7 +70,7 @@ impl Store {
     pub fn open_at(home: &Path) -> Result<Store> {
         let images = home.join("images");
         std::fs::create_dir_all(&images).with_context(|| format!("can't create {}", images.display()))?;
-        let conn = Connection::open(home.join("ochre.db"))?;
+        let conn = Connection::open(home.join("mimesis.db"))?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
@@ -355,7 +355,7 @@ impl Store {
 
     fn save_image(&self, bytes: &[u8]) -> Result<(String, u32, u32)> {
         let reader = image::ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
-        let format = reader.format().ok_or_else(|| anyhow!("that file isn't an image Ochre can read (png, jpeg, webp, gif)"))?;
+        let format = reader.format().ok_or_else(|| anyhow!("that file isn't an image Mimesis can read (png, jpeg, webp, gif)"))?;
         let (width, height) = reader.into_dimensions().context("can't read the image's size")?;
         let extension = format.extensions_str().first().copied().unwrap_or("img");
         let hash = Sha256::digest(bytes);
@@ -401,7 +401,7 @@ mod tests {
     }
 
     fn temp_store() -> (Store, PathBuf) {
-        let folder = std::env::temp_dir().join(format!("ochre-test-{}-{}", std::process::id(), rand_suffix()));
+        let folder = std::env::temp_dir().join(format!("mimesis-test-{}-{}", std::process::id(), rand_suffix()));
         (Store::open_at(&folder).unwrap(), folder)
     }
 

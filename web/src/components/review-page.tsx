@@ -142,7 +142,7 @@ export function ReviewPage({ review }: { review: Review }) {
               </EmptyMedia>
               <EmptyTitle>No images yet</EmptyTitle>
               <EmptyDescription>
-                Drop images here, or run <code className="font-mono">ochre add {review.id} image.png</code>.
+                Drop images here, or run <code className="font-mono">mimesis add {review.id} image.png</code>.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

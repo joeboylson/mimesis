@@ -72,7 +72,7 @@ pub fn router(store: Shared, port: u16) -> Router {
         .layer(middleware::from_fn_with_state(port, refuse_other_sites))
 }
 
-/// A request is local when it's addressed to this machine on Ochre's port
+/// A request is local when it's addressed to this machine on Mimesis's port
 /// (which stops a website renamed to point here), and, if a page sent it,
 /// that page came from the same address.
 pub fn is_local_request(host: Option<&str>, origin: Option<&str>, port: u16) -> bool {
@@ -88,7 +88,7 @@ async fn refuse_other_sites(State(port): State<u16>, request: Request, next: Nex
         is_local_request(header_text(header::HOST), header_text(header::ORIGIN), port)
     };
     if !is_local {
-        return (StatusCode::FORBIDDEN, "only pages Ochre serves itself may use it").into_response();
+        return (StatusCode::FORBIDDEN, "only pages Mimesis serves itself may use it").into_response();
     }
     next.run(request).await
 }
@@ -138,7 +138,7 @@ async fn with_store<T: Send + 'static>(store: Shared, work: impl FnOnce(&Store) 
 }
 
 async fn version(State(store): State<Shared>) -> Reply {
-    ok(json!({ "version": with_store(store, |s| s.version()).await?, "ochre": crate::VERSION }))
+    ok(json!({ "version": with_store(store, |s| s.version()).await?, "mimesis": crate::VERSION }))
 }
 
 async fn reviews(State(store): State<Shared>) -> Reply {

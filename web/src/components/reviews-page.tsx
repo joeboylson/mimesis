@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { copyText } from '@/components/copy-button'
-import { useReviews } from '@/hooks/use-ochre'
+import { useReviews } from '@/hooks/use-mimesis'
 import { addImages, api, imageUrl, type ReviewSummary } from '@/lib/api'
 import { go, reviewHash } from '@/lib/route'
 
@@ -73,12 +73,12 @@ function NewReviewDialog({ open, onOpenChange, files: initial }: { open: boolean
 
 // What to paste to an agent so it starts a review and works it with you.
 const START_PROMPT =
-  'Start a new Ochre review: run `ochre guide` (and `ochre skill list` for a skill that fits), put the images in with `ochre new`, then wait for my review and make new versions until I approve each one.'
+  'Start a new Mimesis review: run `mimesis guide` (and `mimesis skill list` for a skill that fits), put the images in with `mimesis new`, then wait for my review and make new versions until I approve each one.'
 
 function StartWithAi() {
   const copy = () =>
     copyText(START_PROMPT)
-      .then(() => toast.success('Copied a prompt for your agent', { description: 'Paste it into Claude Code or any agent with ochre installed.' }))
+      .then(() => toast.success('Copied a prompt for your agent', { description: 'Paste it into Claude Code or any agent with mimesis installed.' }))
       .catch((e) => toast.error(e.message))
   return (
     <Tooltip>

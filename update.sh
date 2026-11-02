@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pulls the latest ochre and reinstalls it. `ochre update` runs this.
+# Pulls the latest mimesis and reinstalls it. `mimesis update` runs this.
 # Passes its options on to install.sh, so ./update.sh --app updates the app too.
 set -e
 cd "$(dirname "$0")"

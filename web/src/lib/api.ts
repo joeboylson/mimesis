@@ -1,4 +1,4 @@
-// The server's API. Shapes match crates/ochre/src/model.rs.
+// The server's API. Shapes match crates/mimesis/src/model.rs.
 
 export type Shape =
   | { kind: 'rect'; x: number; y: number; w: number; h: number }

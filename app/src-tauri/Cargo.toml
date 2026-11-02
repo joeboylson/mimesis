@@ -1,12 +1,12 @@
 [package]
-name = "ochre-app"
+name = "mimesis-app"
 version = "0.1.0"
 edition = "2021"
-description = "The Ochre app: a window onto the same page `ochre open` shows in a browser."
+description = "The Mimesis app: a window onto the same page `mimesis open` shows in a browser."
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-ochre = { path = "../../crates/ochre" }
+mimesis = { path = "../../crates/mimesis" }
 tauri = { version = "2", features = [] }

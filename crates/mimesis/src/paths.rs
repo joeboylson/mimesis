@@ -2,17 +2,17 @@ use std::path::PathBuf;
 
 pub const DEFAULT_PORT: u16 = 4620;
 
-/// Where everything lives: OCHRE_HOME, or ~/.ochre.
+/// Where everything lives: MIMESIS_HOME, or ~/.mimesis.
 pub fn home() -> PathBuf {
-    if let Some(home) = std::env::var_os("OCHRE_HOME") {
+    if let Some(home) = std::env::var_os("MIMESIS_HOME") {
         return PathBuf::from(home);
     }
     let user_home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
-    user_home.join(".ochre")
+    user_home.join(".mimesis")
 }
 
 pub fn port() -> u16 {
-    std::env::var("OCHRE_PORT").ok().and_then(|port| port.parse().ok()).unwrap_or(DEFAULT_PORT)
+    std::env::var("MIMESIS_PORT").ok().and_then(|port| port.parse().ok()).unwrap_or(DEFAULT_PORT)
 }
 
 pub fn address(port: u16) -> String {
