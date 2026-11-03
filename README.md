@@ -19,12 +19,15 @@ drag to move around.
 ![Marking up a sign-up screen](web/public/guide/2-mark-up.png)
 
 **3. Your AI picks it up.** It gets each image with your marks drawn on it
-and your notes listed by number.
+and your notes listed by number, and answers each mark when it sends the
+new version. Mimesis lets you know when it's ready.
 
 ![The AI reading the marks from the terminal](web/public/guide/3-ai-pulls.png)
 
-**4. Compare the new version.** Turn on **Compare** to see your marks on
-the left and the new version on the right. Approve it, or mark it up again.
+**4. Compare the new version.** Turn on **Compare** to see your marks next
+to the new version, with the AI's answer under each one. Switch to
+**Overlay** to fade between the two, or **Flicker** to swap them back and
+forth so small changes jump out. Approve it, or mark it up again.
 
 ![Comparing the old and new sign-up screen](web/public/guide/4-compare.png)
 
