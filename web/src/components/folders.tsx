@@ -22,11 +22,13 @@ export function moveReview(reviewId: number, folder: Folder | null) {
     .catch((e) => toast.error(e.message))
 }
 
-function FolderRow({ label, count, picked, icon: Icon, onOpen, onDropReview }: { label: string; count: number; picked: boolean; icon: typeof FolderIcon; onOpen: () => void; onDropReview?: (reviewId: number) => void }) {
+// A plain link; the open folder is underlined. Review cards can be dropped on it.
+function FolderRow({ label, count, picked, icon: Icon, href, onDropReview }: { label: string; count: number; picked: boolean; icon: typeof FolderIcon; href: string; onDropReview?: (reviewId: number) => void }) {
   const [over, setOver] = useState(false)
   return (
-    <button
-      onClick={onOpen}
+    <a
+      href={href}
+      aria-current={picked ? 'page' : undefined}
       onDragOver={(e) => {
         if (!onDropReview || !e.dataTransfer.types.includes(REVIEW_DRAG)) return
         e.preventDefault()
@@ -38,16 +40,12 @@ function FolderRow({ label, count, picked, icon: Icon, onOpen, onDropReview }: {
         const id = Number(e.dataTransfer.getData(REVIEW_DRAG))
         if (onDropReview && id) onDropReview(id)
       }}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted',
-        picked && 'border-foreground bg-muted font-medium',
-        over && 'bg-muted ring-2 ring-ring',
-      )}
+      className={cn('group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm', over && 'bg-muted ring-2 ring-ring')}
     >
       <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1 truncate">{label}</span>
+      <span className={cn('flex-1 truncate underline-offset-4 group-hover:underline', picked && 'font-medium underline decoration-2')}>{label}</span>
       <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
-    </button>
+    </a>
   )
 }
 
@@ -80,7 +78,7 @@ export function FolderSidebar({ folders, folderId, total }: { folders: Folder[];
   const [creating, setCreating] = useState(false)
   return (
     <aside className="flex w-56 shrink-0 flex-col gap-1 border-r p-3">
-      <FolderRow label="All reviews" count={total} picked={folderId === null} icon={Layers} onOpen={() => go(folderHash(null))} onDropReview={(id) => moveReview(id, null)} />
+      <FolderRow label="All reviews" count={total} picked={folderId === null} icon={Layers} href={folderHash(null)} onDropReview={(id) => moveReview(id, null)} />
       <div className="mt-3 mb-1 flex items-center justify-between px-2">
         <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Folders</span>
         <Button variant="ghost" size="icon-xs" aria-label="New folder" title="New folder" onClick={() => setCreating(true)}>
@@ -94,7 +92,7 @@ export function FolderSidebar({ folders, folderId, total }: { folders: Folder[];
           count={folder.reviews}
           picked={folderId === folder.id}
           icon={FolderIcon}
-          onOpen={() => go(folderHash(folder.id))}
+          href={folderHash(folder.id)}
           onDropReview={(id) => moveReview(id, folder)}
         />
       ))}
