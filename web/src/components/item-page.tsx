@@ -4,9 +4,10 @@ import { toast } from 'sonner'
 
 import { Annotator, TOOLS, Toolbar, type Tool } from '@/components/annotator'
 import { ConfirmDelete } from '@/components/confirm-delete'
-import { COLORS, MarkedImage } from '@/components/marks'
+import { COLORS } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
 import { Button } from '@/components/ui/button'
+import { ZoomCanvas } from '@/components/zoom-canvas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 import { api, imageUrl, latest, type Annotation, type Item, type Review, type Round } from '@/lib/api'
@@ -304,16 +305,13 @@ function EditRound({
             />
           </div>
         ) : (
-          <div className={cn('absolute inset-4 grid grid-cols-2 gap-4', pager && 'bottom-16')}>
-            <figure className="flex min-h-0 flex-col gap-2">
-              <figcaption className="text-center text-xs text-muted-foreground">Round {previous.number}: your marks</figcaption>
-              <MarkedImage src={imageUrl(previous.image)} width={previous.width} height={previous.height} annotations={previous.annotations} className="min-h-0 flex-1" />
-            </figure>
-            <figure className="flex min-h-0 flex-col gap-2">
-              <figcaption className="text-center text-xs text-muted-foreground">Round {round.number}: new version</figcaption>
-              <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={annotations} className="min-h-0 flex-1" />
-            </figure>
-          </div>
+          <ZoomCanvas
+            className={cn('absolute inset-0', pager && 'bottom-14')}
+            panels={[
+              { caption: `Round ${previous.number}: your marks`, src: imageUrl(previous.image), width: previous.width, height: previous.height, annotations: previous.annotations },
+              { caption: `Round ${round.number}: new version`, src: imageUrl(round.image), width: round.width, height: round.height, annotations },
+            ]}
+          />
         )}
         {pager}
       </div>
@@ -383,9 +381,10 @@ function ViewRound({ item, round, isLatest, pager }: { item: Item; round: Round;
   return (
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
-        <div className={cn('absolute inset-4', pager && 'bottom-16')}>
-          <MarkedImage src={imageUrl(round.image)} width={round.width} height={round.height} annotations={round.annotations} className="size-full" />
-        </div>
+        <ZoomCanvas
+          className={cn('absolute inset-0', pager && 'bottom-14')}
+          panels={[{ src: imageUrl(round.image), width: round.width, height: round.height, annotations: round.annotations }]}
+        />
         {pager}
       </div>
       <aside className="flex w-80 shrink-0 flex-col border-l">

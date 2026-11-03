@@ -37,6 +37,12 @@ The image comes back to you marked "Needs review". **Compare** shows your
 last marks on the left and the new version on the right, with the AI's note
 on the right-hand side. Approve it, or switch to **Mark up** and go again.
 
+To look closer, zoom and move around both images together: pinch on a
+trackpad or hold ⌘/Ctrl and scroll to zoom, and drag or scroll to move.
+The buttons in the bottom-right corner zoom in and out, center both images,
+and fit them back on screen. Double-click zooms in on a spot. Earlier
+rounds work the same way.
+
 Each time a new version comes back, that's a new round. Use the round
 buttons at the bottom of the image to look at earlier rounds.
 
@@ -65,3 +71,6 @@ before deleting anything.
 | `⇧⌘Z` / `Ctrl+Y` | Redo |
 | `⌘↵` | Mark as reviewed |
 | `←` / `→` | Previous or next image |
+| `+` / `-` | Zoom in or out (Compare, and earlier rounds) |
+| `c` | Center the images |
+| `0` | Fit the images on screen |

@@ -128,9 +128,24 @@ export function Marks({
 }
 
 // An image with its marks on top, fitted inside its parent.
-export function MarkedImage({ src, width, height, annotations, className }: { src: string; width: number; height: number; annotations: Annotation[]; className?: string }) {
+export function MarkedImage({
+  src,
+  width,
+  height,
+  annotations,
+  className,
+  size,
+}: {
+  src: string
+  width: number
+  height: number
+  annotations: Annotation[]
+  className?: string
+  // A fixed size on screen, for the zoomable canvas.
+  size?: { width: number; height: number }
+}) {
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className={className} preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${width} ${height}`} className={className} preserveAspectRatio="xMidYMid meet" width={size?.width} height={size?.height}>
       <image href={src} width={width} height={height} />
       <Marks annotations={annotations} width={width} height={height} />
     </svg>
