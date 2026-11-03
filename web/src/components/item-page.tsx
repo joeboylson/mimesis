@@ -1,8 +1,8 @@
-import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, MoreHorizontal, PenLine, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, MoreHorizontal, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-import { Annotator, TOOLS, Toolbar, type Tool } from '@/components/annotator'
+import { Annotator, PICKED, TOOLS, Toolbar, type Tool } from '@/components/annotator'
 import { ConfirmDelete } from '@/components/confirm-delete'
 import { COLORS } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
@@ -69,21 +69,6 @@ function RoundPager({ item, round, onPick }: { item: Item; round: Round; onPick:
           <ChevronRight />
         </Button>
       </div>
-    </div>
-  )
-}
-
-function ModeToggle({ mode, setMode }: { mode: Mode; setMode: (mode: Mode) => void }) {
-  return (
-    <div className="flex gap-1 rounded-lg bg-muted p-1">
-      <Button variant={mode === 'compare' ? 'outline' : 'ghost'} size="xs" onClick={() => setMode('compare')}>
-        <Columns2 />
-        Compare
-      </Button>
-      <Button variant={mode === 'mark' ? 'outline' : 'ghost'} size="xs" onClick={() => setMode('mark')}>
-        <PenLine />
-        Mark up
-      </Button>
     </div>
   )
 }
@@ -264,6 +249,7 @@ function EditRound({
       }
       if (isTyping(event) || event.metaKey || event.ctrlKey || event.altKey) return
       if (event.key === '0') setFitKey((k) => k + 1)
+      if (event.key === '\\' && previous) setMode(mode === 'compare' ? 'mark' : 'compare')
       const picked = TOOLS.find((t) => t.key && t.key === event.key.toLowerCase())
       if (picked) {
         setTool(picked.tool)
@@ -289,6 +275,20 @@ function EditRound({
             </Button>
             <Button variant="ghost" size="icon-sm" aria-label="Redo (⇧⌘Z)" title="Redo (⇧⌘Z)" disabled={!drawing || future.length === 0} onClick={redo}>
               <Redo />
+            </Button>
+          </div>
+          <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={mode === 'compare'}
+              disabled={!previous}
+              title={previous ? 'Compare with the last round (\\)' : 'Nothing to compare yet: this is the first round'}
+              onClick={() => setMode(mode === 'compare' ? 'mark' : 'compare')}
+              className={cn('relative', mode === 'compare' && PICKED)}
+            >
+              <Columns2 />
+              Compare
             </Button>
           </div>
         </div>
@@ -338,49 +338,68 @@ function EditRound({
       </div>
 
       <aside className="flex w-80 shrink-0 flex-col border-l">
-        <div className="grid flex-1 content-start gap-5 overflow-y-auto p-4">
-          <AiNote round={round} />
-          {previous && (
+        {mode === 'compare' && previous ? (
+          // Comparing: nothing can be drawn, so the sidebar shows what came back and what was asked for.
+          <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto p-4">
+            <AiNote round={round} />
             <Section title={`Your marks, round ${previous.number}`}>
               <ReadOnlyMarks round={previous} />
             </Section>
-          )}
-          <Section title="Marks" action={annotations.length > 0 && <span className="text-xs text-muted-foreground">{annotations.length}</span>}>
-            {annotations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Draw on the image to mark what should change. Each mark gets a number and a note.</p>
-            ) : (
-              <div className="grid gap-2">
-                {annotations.map((a, i) => (
-                  <div
-                    key={a.id}
-                    className={cn('grid gap-2 rounded-lg border p-2 transition-colors', selected === a.id ? 'border-ring bg-muted/50' : 'border-transparent')}
-                    onClick={() => setSelected(a.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <NumberDot number={i + 1} color={a.color} />
-                      <span className="flex-1 text-sm text-muted-foreground">{KIND_LABELS[a.kind]}</span>
-                      <Button variant="ghost" size="icon-xs" aria-label="Delete mark" onClick={(e) => (e.stopPropagation(), remove(a.id))}>
-                        <X />
-                      </Button>
-                    </div>
-                    <Textarea
-                      autoFocus={focus === a.id}
-                      rows={2}
-                      placeholder="What should change here?"
-                      value={a.note}
-                      onFocus={() => setSelected(a.id)}
-                      onChange={(e) => change(annotations.map((other) => (other.id === a.id ? { ...other, note: e.target.value } : other)), note, a.id)}
-                      className="min-h-0 resize-none text-sm"
-                    />
+          </div>
+        ) : (
+          <>
+            <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto p-4">
+              <Section title="Marks" action={annotations.length > 0 && <span className="text-xs text-muted-foreground">{annotations.length}</span>}>
+                {annotations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Draw on the image to mark what should change. Each mark gets a number and a note.</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {annotations.map((a, i) => (
+                      <div
+                        key={a.id}
+                        className={cn('grid gap-2 rounded-lg border p-2 transition-colors', selected === a.id ? 'border-ring bg-muted/50' : 'border-transparent')}
+                        onClick={() => setSelected(a.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <NumberDot number={i + 1} color={a.color} />
+                          <span className="flex-1 text-sm text-muted-foreground">{KIND_LABELS[a.kind]}</span>
+                          <Button variant="ghost" size="icon-xs" aria-label="Delete mark" onClick={(e) => (e.stopPropagation(), remove(a.id))}>
+                            <X />
+                          </Button>
+                        </div>
+                        <Textarea
+                          autoFocus={focus === a.id}
+                          rows={2}
+                          placeholder="What should change here?"
+                          value={a.note}
+                          onFocus={() => setSelected(a.id)}
+                          onChange={(e) => change(annotations.map((other) => (other.id === a.id ? { ...other, note: e.target.value } : other)), note, a.id)}
+                          className="min-h-0 resize-none text-sm"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+              </Section>
+            </div>
+            {/* Pinned under the marks, laid out like one of them. */}
+            <div className="border-t p-4 pb-0">
+              <div className="grid gap-2 rounded-lg border border-transparent p-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <span className="flex-1 text-sm text-muted-foreground">Overall note</span>
+                </div>
+                <Textarea
+                  rows={2}
+                  placeholder="Anything that isn't about one spot"
+                  value={note}
+                  onChange={(e) => change(annotations, e.target.value, 'overall')}
+                  className="min-h-0 resize-none text-sm"
+                />
               </div>
-            )}
-          </Section>
-          <Section title="Overall note">
-            <Textarea rows={3} placeholder="Anything that isn't about one spot" value={note} onChange={(e) => change(annotations, e.target.value, 'overall')} className="resize-none text-sm" />
-          </Section>
-        </div>
+            </div>
+          </>
+        )}
         <div className="grid gap-2 border-t p-4">
           <Button onClick={send} disabled={!canSend}>
             <CheckCheck />
@@ -480,10 +499,9 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
   const isLatest = round.id === current.id
   const previous = item.rounds.find((r) => r.number === current.number - 1) ?? null
   const editing = isLatest && item.state === 'needs_review'
-  const startMode = (): Mode => (previous && current.annotations.length === 0 ? 'compare' : 'mark')
-  const [mode, setMode] = useState<Mode>(startMode)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => setMode(startMode()), [current.id])
+  // Compare is off until switched on, for each new round.
+  const [mode, setMode] = useState<Mode>('mark')
+  useEffect(() => setMode('mark'), [current.id])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const pager = <RoundPager item={item} round={round} onPick={setViewing} />
 
@@ -522,11 +540,6 @@ export function ItemPage({ review, item }: { review: Review; item: Item }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {editing && previous && (
-          <div className="ml-4">
-            <ModeToggle mode={mode} setMode={setMode} />
-          </div>
-        )}
         <div className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
           <Button variant="ghost" size="icon-sm" disabled={!prev} aria-label="Previous image" onClick={() => prev && go(itemHash(review.id, prev.id))}>
             <ChevronLeft />

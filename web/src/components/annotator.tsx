@@ -26,6 +26,9 @@ const clamp = (v: number) => Math.min(Math.max(v, 0), 1)
 // `drawing` off (Compare, earlier rounds) greys out everything but Move and Fit.
 // `holding` is a right drag in progress: the hand shows as picked and the
 // rest fades until the button is let go.
+// The black bar under a picked tool or a switched-on button.
+export const PICKED = 'after:absolute after:inset-x-1.5 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-foreground'
+
 export function Toolbar({
   tool,
   setTool,
@@ -59,7 +62,7 @@ export function Toolbar({
               disabled={!drawing && t !== 'move'}
               className={cn(
                 'relative',
-                current === t && 'after:absolute after:inset-x-1.5 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-foreground',
+                current === t && PICKED,
                 t !== 'move' && faded,
               )}
             >

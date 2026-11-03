@@ -28,16 +28,20 @@ back to the tool you were using when you let go. Or pick **Move** (the
 hand) and drag with the left button. Write what should change at that spot. Use **Overall note** for
 anything that isn't about one spot.
 
-Everything saves as you go.
+Your marks are listed on the right, and the overall note stays at the
+bottom. Everything saves as you go.
 
 When you're done with an image, press **Mark as reviewed**. If it's already
 right, press **Approve**.
 
 ## When a new version comes back
 
-The image comes back to you marked "Needs review". **Compare** shows your
-last marks on the left and the new version on the right, with the AI's note
-on the right-hand side. Approve it, or switch to **Mark up** and go again.
+The image comes back to you marked "Needs review". Press **Compare** (at
+the end of the bar above the image, or the `\` key) to see your last marks
+on the left and the new version on the right. The sidebar then shows the
+AI's note and what you asked for last time. You can't draw while comparing;
+press Compare again to go back to marking up. Then approve it, or mark it
+up and go again.
 
 To look closer, scroll to zoom in or out, and drag to move around. In
 Compare, both images move together. **Fit** (the last button in the bar
@@ -74,3 +78,4 @@ before deleting anything.
 | Scroll | Zoom in or out |
 | Right-click and drag | Move around, with any tool |
 | `0` | Fit the image on screen |
+| `\` | Turn Compare on or off |

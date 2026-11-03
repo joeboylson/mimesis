@@ -187,7 +187,10 @@ async function main() {
 
     // 4. It answers with a new version, which you compare with your marks.
     mimesis('respond', String(signUpItem.id), after, '-n', '1: button is brand green now.\n2: heading bumped to 26px.\n3: added the forgot-password link.')
-    await shoot('4-compare', `#/r/${review.id}/${signUpItem.id}`, 'text=your marks')
+    await shoot('4-compare', `#/r/${review.id}/${signUpItem.id}`, 'text=your marks', async (page) => {
+      await page.waitForSelector("[aria-label='Box']")
+      await page.keyboard.press('Backslash')
+    })
 
     // 5. Approve each image; once all are approved, finish the review.
     for (const item of items) await api(`/items/${item.id}/approve`, { method: 'POST' })

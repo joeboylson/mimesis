@@ -18,7 +18,7 @@ const STEPS = [
   {
     image: '4-compare',
     title: 'Compare the new version',
-    text: 'The image comes back to you with your marks on the left and the new version on the right, plus a note from the AI. Approve it, or switch to Mark up and go again.',
+    text: 'The image comes back to you. Press Compare to see your marks on the left and the new version on the right, with the note from the AI. Approve it, or turn Compare off and mark it up again.',
   },
   {
     image: '5-finish',
