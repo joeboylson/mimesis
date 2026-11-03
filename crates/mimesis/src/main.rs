@@ -124,6 +124,13 @@ enum SkillCmd {
 const VERSION_TEXT: &str = concat!(env!("CARGO_PKG_VERSION"), " (built ", env!("MIMESIS_BUILT"), ")");
 
 fn main() {
+    if !paths::is_default_home() {
+        eprintln!(
+            "mimesis: using the data folder {}, not {}. Reviews here won't show up in the app or the usual page.",
+            paths::home().display(),
+            paths::default_home().display()
+        );
+    }
     if let Err(error) = run(Cli::parse()) {
         eprintln!("mimesis: {error:#}");
         std::process::exit(1);

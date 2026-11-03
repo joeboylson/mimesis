@@ -26,12 +26,12 @@ docker exec mimesis mimesis guide
 ```
 
 `mimesis pull` and `mimesis respond` work with files. Put them in your
-`~/.mimesis` folder, which the container sees as `/data`:
+`~/.mimesis` folder, which the container sees as `/root/.mimesis`:
 
 ```sh
-docker exec mimesis mimesis pull --review 1 --out /data/pull    # lands in ~/.mimesis/pull
+docker exec mimesis mimesis pull --review 1 --out /root/.mimesis/pull    # lands in ~/.mimesis/pull
 cp new.png ~/.mimesis/new.png
-docker exec mimesis mimesis respond 12 /data/new.png -n "1: made the button green"
+docker exec mimesis mimesis respond 12 /root/.mimesis/new.png -n "1: made the button green"
 ```
 
 Your AI can also skip the command and talk to Mimesis over the network.

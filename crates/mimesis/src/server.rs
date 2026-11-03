@@ -40,7 +40,17 @@ pub fn is_running(port: u16) -> bool {
 
 pub async fn serve(port: u16) -> Result<()> {
     let store = Arc::new(Mutex::new(Store::open()?));
-    let listener = tokio::net::TcpListener::bind(SocketAddr::new(crate::paths::listen(), port)).await?;
+    let listener = tokio::net::TcpListener::bind(SocketAddr::new(crate::paths::listen(), port)).await.map_err(|error| {
+        if error.kind() == std::io::ErrorKind::AddrInUse {
+            anyhow::anyhow!(
+                "something is already using port {port}. It's probably Mimesis itself (the app, Docker, or another `mimesis serve`), \
+                 so open {} instead. Only one Mimesis should run at a time.",
+                crate::paths::address(port)
+            )
+        } else {
+            error.into()
+        }
+    })?;
     axum::serve(listener, router(store, port)).with_graceful_shutdown(async { tokio::signal::ctrl_c().await.ok(); }).await?;
     Ok(())
 }
@@ -138,7 +148,12 @@ async fn with_store<T: Send + 'static>(store: Shared, work: impl FnOnce(&Store) 
 }
 
 async fn version(State(store): State<Shared>) -> Reply {
-    ok(json!({ "version": with_store(store, |s| s.version()).await?, "mimesis": crate::VERSION }))
+    ok(json!({
+        "version": with_store(store, |s| s.version()).await?,
+        "mimesis": crate::VERSION,
+        "home": crate::paths::home().display().to_string(),
+        "default_home": crate::paths::is_default_home(),
+    }))
 }
 
 async fn reviews(State(store): State<Shared>) -> Reply {

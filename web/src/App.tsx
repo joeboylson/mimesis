@@ -1,4 +1,4 @@
-import { WifiOff } from 'lucide-react'
+import { WifiOff, TriangleAlert } from 'lucide-react'
 
 import { ItemPage } from '@/components/item-page'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -23,7 +23,7 @@ function ReviewRoute({ id, itemId, version }: { id: number; itemId: number | nul
 
 export default function App() {
   const route = useRoute()
-  const { version, online } = useVersion()
+  const { version, online, otherFolder } = useVersion()
 
   return (
     <TooltipProvider>
@@ -59,6 +59,15 @@ export default function App() {
             <ModeToggle />
           </div>
         </header>
+        {otherFolder && (
+          <div data-other-folder className="flex items-center gap-2 border-b border-yellow-300 bg-yellow-100 px-4 py-2 text-sm text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+            <TriangleAlert className="size-4 shrink-0" />
+            <span>
+              This Mimesis keeps its reviews in <code className="font-mono">{otherFolder}</code>, not the usual <code className="font-mono">~/.mimesis</code>. Work here won't show up in the
+              app or your usual page.
+            </span>
+          </div>
+        )}
         <main className="flex min-h-0 flex-1 flex-col">
           {route.page === 'reviews' && <ReviewsPage version={version} />}
           {route.page === 'skills' && <SkillsPage version={version} />}

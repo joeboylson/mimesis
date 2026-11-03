@@ -25,9 +25,10 @@ RUN cargo build --release -p mimesis
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=server /src/target/release/mimesis /usr/local/bin/mimesis
-ENV MIMESIS_HOME=/data \
-    MIMESIS_PORT=4620 \
+# Data goes in the container's own ~/.mimesis (/root/.mimesis), the usual
+# place, which docker-compose.yml connects to ~/.mimesis on your computer.
+ENV MIMESIS_PORT=4620 \
     MIMESIS_LISTEN=0.0.0.0
-VOLUME /data
+VOLUME /root/.mimesis
 EXPOSE 4620
 CMD ["mimesis", "serve"]

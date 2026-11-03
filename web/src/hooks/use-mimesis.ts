@@ -9,15 +9,18 @@ const POLL_MS = 1500
 export function useVersion() {
   const [version, setVersion] = useState<number | null>(null)
   const [online, setOnline] = useState(true)
+  // Set when the server keeps its data somewhere other than ~/.mimesis.
+  const [otherFolder, setOtherFolder] = useState<string | null>(null)
   useEffect(() => {
     let stopped = false
     const check = () =>
       api
         .version()
-        .then(({ version }) => {
+        .then(({ version, home, default_home }) => {
           if (stopped) return
           setOnline(true)
           setVersion(version)
+          setOtherFolder(default_home ? null : home)
         })
         .catch(() => !stopped && setOnline(false))
     check()
@@ -27,7 +30,7 @@ export function useVersion() {
       clearInterval(timer)
     }
   }, [])
-  return { version, online }
+  return { version, online, otherFolder }
 }
 
 function useLoaded<T>(load: () => Promise<T>, version: number | null, key: unknown) {

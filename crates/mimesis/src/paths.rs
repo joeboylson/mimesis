@@ -4,11 +4,22 @@ pub const DEFAULT_PORT: u16 = 4620;
 
 /// Where everything lives: MIMESIS_HOME, or ~/.mimesis.
 pub fn home() -> PathBuf {
-    if let Some(home) = std::env::var_os("MIMESIS_HOME") {
-        return PathBuf::from(home);
+    match std::env::var_os("MIMESIS_HOME") {
+        Some(home) => PathBuf::from(home),
+        None => default_home(),
     }
+}
+
+pub fn default_home() -> PathBuf {
     let user_home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
     user_home.join(".mimesis")
+}
+
+/// False when MIMESIS_HOME points somewhere else. Work kept in another folder
+/// doesn't show up in the app, the page or Docker, so both warn about it.
+pub fn is_default_home() -> bool {
+    let same = |a: PathBuf, b: PathBuf| a.canonicalize().unwrap_or(a) == b.canonicalize().unwrap_or(b);
+    same(home(), default_home())
 }
 
 pub fn port() -> u16 {

@@ -84,7 +84,7 @@ export const bakedUrl = (round: Round) => `/api/rounds/${round.id}/baked.png?v=$
 export const latest = (item: Item) => item.rounds[item.rounds.length - 1]
 
 export const api = {
-  version: () => call<{ version: number }>('/version'),
+  version: () => call<{ version: number; home: string; default_home: boolean }>('/version'),
   skills: () => call<Skill[]>('/skills'),
   reviews: () => call<ReviewSummary[]>('/reviews'),
   review: (id: number) => call<Review>(`/reviews/${id}`),

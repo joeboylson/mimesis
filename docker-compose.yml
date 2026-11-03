@@ -8,5 +8,5 @@ services:
       - "127.0.0.1:4620:4620"
     # Your reviews and images, kept between restarts.
     volumes:
-      - ~/.mimesis:/data
+      - ~/.mimesis:/root/.mimesis
     restart: unless-stopped

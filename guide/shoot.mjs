@@ -23,6 +23,8 @@ const BASE = `http://127.0.0.1:${PORT}`
 const VIEWPORT = { width: 1440, height: 900 }
 
 const FREEZE_CSS = `
+  /* The script runs on a throwaway folder; its warning isn't part of the flow. */
+  [data-other-folder] { display: none !important; }
   *, *::before, *::after {
     animation-duration: 0s !important; animation-delay: 0s !important;
     transition-duration: 0s !important; transition-delay: 0s !important;

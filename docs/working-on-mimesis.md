@@ -26,6 +26,17 @@ whether or not the server is running.
 The server only answers requests addressed to `localhost` or `127.0.0.1`
 on its own port.
 
+## One copy, one folder
+
+The web page, the desktop app and Docker all keep reviews in `~/.mimesis`,
+so they all show the same work. Run only one of them at a time: they all
+use port 4620, and a second one stops with a message saying Mimesis is
+already running.
+
+If `MIMESIS_HOME` points anywhere else, Mimesis warns you: a yellow bar on
+the page, and a line from every `mimesis` command. Reviews in another
+folder don't show up in the app or your usual page.
+
 ## Installing your changes
 
 ```sh
