@@ -13,7 +13,8 @@ It works with any image: app screenshots, diagrams, generated art.
 ![A review with three images waiting](web/public/guide/1-review.png)
 
 **2. Mark what should change.** Draw boxes, circles, arrows, lines or pins.
-Each mark gets a number and a note.
+Each mark gets a number and a note. Scroll to zoom in, and right-click and
+drag to move around.
 
 ![Marking up a sign-up screen](web/public/guide/2-mark-up.png)
 
@@ -22,8 +23,8 @@ and your notes listed by number.
 
 ![The AI reading the marks from the terminal](web/public/guide/3-ai-pulls.png)
 
-**4. Compare the new version.** Your marks are on the left and the new
-version is on the right. Approve it, or mark it up again.
+**4. Compare the new version.** Turn on **Compare** to see your marks on
+the left and the new version on the right. Approve it, or mark it up again.
 
 ![Comparing the old and new sign-up screen](web/public/guide/4-compare.png)
 
