@@ -25,9 +25,10 @@ mimesis skill install --all
 
 1. Make a folder here named for the kind of image (`diagrams`,
    `image-gen`, `charts`, …).
-2. Put a `SKILL.md` in it with front matter: `name: mimesis-<folder>` and a
-   `description` that says when to use it. Supporting files (scripts,
-   examples) go beside it and are installed with it.
+2. Put a `SKILL.md` in it. Start the file with a `name:` line
+   (`mimesis-<folder>`) and a `description:` line that says when to use it,
+   between two `---` lines. Any scripts or examples go in the same folder
+   and are installed with it.
 3. Have it cover: how to make the images so a remake differs only by the
    requested change, how to name them (the file name is the item's name in
    Mimesis), and the Mimesis loop.

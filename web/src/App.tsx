@@ -8,6 +8,7 @@ import { SkillsPage } from '@/components/skills-page'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { GuidePage } from '@/components/guide-page'
 import { useReview, useVersion } from '@/hooks/use-mimesis'
 import { go, reviewHash, useRoute } from '@/lib/route'
 
@@ -38,11 +39,14 @@ export default function App() {
             </button>
           )}
           <nav className="ml-4 flex gap-1">
-            <Button variant={route.page === 'skills' ? 'ghost' : 'secondary'} size="sm" onClick={() => go('#/')}>
+            <Button variant={route.page === 'reviews' || route.page === 'review' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/')}>
               Reviews
             </Button>
             <Button variant={route.page === 'skills' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/skills')}>
               Skills
+            </Button>
+            <Button variant={route.page === 'guide' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/guide')}>
+              Guide
             </Button>
           </nav>
           <div className="ml-auto flex items-center gap-3">
@@ -58,6 +62,7 @@ export default function App() {
         <main className="flex min-h-0 flex-1 flex-col">
           {route.page === 'reviews' && <ReviewsPage version={version} />}
           {route.page === 'skills' && <SkillsPage version={version} />}
+          {route.page === 'guide' && <GuidePage />}
           {route.page === 'review' && <ReviewRoute id={route.id} itemId={route.item} version={version} />}
         </main>
       </div>
