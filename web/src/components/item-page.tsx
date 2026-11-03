@@ -152,7 +152,11 @@ function EditRound({
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const [tool, setTool] = useState<Tool>('rect')
+  // The tool to go back to when Space switches Move off again.
+  const beforeMove = useRef<Tool>('rect')
   const [color, setColor] = useState(COLORS[0])
+  const [fitKey, setFitKey] = useState(0)
+  const drawing = mode === 'mark' || !previous
   const pending = useRef<{ annotations: Annotation[]; note: string } | null>(null)
   // Undo history of the marks. Typing in one mark's note counts as one step.
   const [past, setPast] = useState<Snapshot[]>([])
@@ -259,6 +263,17 @@ function EditRound({
         return
       }
       if (isTyping(event) || event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.code === 'Space') {
+        event.preventDefault()
+        if (!drawing || event.repeat) return
+        if (tool === 'move') setTool(beforeMove.current)
+        else {
+          beforeMove.current = tool
+          setTool('move')
+        }
+        return
+      }
+      if (event.key === '0') setFitKey((k) => k + 1)
       const picked = TOOLS.find((t) => t.key === event.key.toLowerCase())
       if (picked) {
         setTool(picked.tool)
@@ -277,36 +292,51 @@ function EditRound({
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
         <div className="absolute inset-x-0 top-3 z-10 flex justify-center gap-2">
-          {mode === 'mark' && <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} />}
-          {mode === 'mark' && (
-            <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
-              <Button variant="ghost" size="icon-sm" aria-label="Undo (⌘Z)" title="Undo (⌘Z)" disabled={past.length === 0} onClick={undo}>
-                <Undo />
-              </Button>
-              <Button variant="ghost" size="icon-sm" aria-label="Redo (⇧⌘Z)" title="Redo (⇧⌘Z)" disabled={future.length === 0} onClick={redo}>
-                <Redo />
-              </Button>
-            </div>
-          )}
-        </div>
-        {mode === 'mark' || !previous ? (
-          <div className={cn('absolute inset-4 top-16', pager && 'bottom-16')}>
-            <Annotator
-              src={imageUrl(round.image)}
-              width={round.width}
-              height={round.height}
-              annotations={annotations}
-              onChange={(next) => change(next)}
-              selected={selected}
-              onSelect={setSelected}
-              tool={tool}
-              color={color}
-              onCreated={setFocus}
-            />
+          <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} onFit={() => setFitKey((k) => k + 1)} drawing={drawing} />
+          <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
+            <Button variant="ghost" size="icon-sm" aria-label="Undo (⌘Z)" title="Undo (⌘Z)" disabled={!drawing || past.length === 0} onClick={undo}>
+              <Undo />
+            </Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Redo (⇧⌘Z)" title="Redo (⇧⌘Z)" disabled={!drawing || future.length === 0} onClick={redo}>
+              <Redo />
+            </Button>
           </div>
+        </div>
+        {drawing ? (
+          <ZoomCanvas
+            className={cn('absolute inset-0', pager && 'bottom-14')}
+            insetTop={40}
+            canDrag={tool === 'move'}
+            fitKey={fitKey}
+            panels={[
+              {
+                src: imageUrl(round.image),
+                width: round.width,
+                height: round.height,
+                annotations,
+                render: (size) => (
+                  <Annotator
+                    src={imageUrl(round.image)}
+                    width={round.width}
+                    height={round.height}
+                    annotations={annotations}
+                    onChange={(next) => change(next)}
+                    selected={selected}
+                    onSelect={setSelected}
+                    tool={tool}
+                    color={color}
+                    onCreated={setFocus}
+                    size={size}
+                  />
+                ),
+              },
+            ]}
+          />
         ) : (
           <ZoomCanvas
             className={cn('absolute inset-0', pager && 'bottom-14')}
+            insetTop={40}
+            fitKey={fitKey}
             panels={[
               { caption: `Round ${previous.number}: your marks`, src: imageUrl(previous.image), width: previous.width, height: previous.height, annotations: previous.annotations },
               { caption: `Round ${round.number}: new version`, src: imageUrl(round.image), width: round.width, height: round.height, annotations },
@@ -378,11 +408,26 @@ function EditRound({
 
 function ViewRound({ item, round, isLatest, pager }: { item: Item; round: Round; isLatest: boolean; pager: React.ReactNode }) {
   const action = (call: Promise<unknown>) => call.catch((e) => toast.error(e.message))
+  const [fitKey, setFitKey] = useState(0)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (isTyping(event) || event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.key === '0') setFitKey((k) => k + 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   return (
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
+        {/* Past rounds can't be drawn on; the bar is there for Move and Fit. */}
+        <div className="absolute inset-x-0 top-3 z-10 flex justify-center">
+          <Toolbar tool="move" setTool={() => {}} color={COLORS[0]} setColor={() => {}} onFit={() => setFitKey((k) => k + 1)} drawing={false} />
+        </div>
         <ZoomCanvas
           className={cn('absolute inset-0', pager && 'bottom-14')}
+          insetTop={40}
+          fitKey={fitKey}
           panels={[{ src: imageUrl(round.image), width: round.width, height: round.height, annotations: round.annotations }]}
         />
         {pager}

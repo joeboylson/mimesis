@@ -23,7 +23,8 @@ show only the images with that status. Mimesis remembers the tab you picked.
 ## Marking up an image
 
 Open an image and draw on it. Each mark gets a number and a note box on the
-right. Write what should change at that spot. Use **Overall note** for
+right. Scroll to zoom in or out. To move around, pick **Move** (the hand)
+or press Space, then drag; press Space again to go back to drawing. Write what should change at that spot. Use **Overall note** for
 anything that isn't about one spot.
 
 Everything saves as you go.
@@ -37,11 +38,9 @@ The image comes back to you marked "Needs review". **Compare** shows your
 last marks on the left and the new version on the right, with the AI's note
 on the right-hand side. Approve it, or switch to **Mark up** and go again.
 
-To look closer, zoom and move around both images together: pinch on a
-trackpad or hold ⌘/Ctrl and scroll to zoom, and drag or scroll to move.
-The buttons in the bottom-right corner zoom in and out, center both images,
-and fit them back on screen. Double-click zooms in on a spot. Earlier
-rounds work the same way.
+To look closer, scroll to zoom in or out, and drag to move around. In
+Compare, both images move together. **Fit** (the last button in the bar
+above the image) puts everything back on screen.
 
 Each time a new version comes back, that's a new round. Use the round
 buttons at the bottom of the image to look at earlier rounds.
@@ -60,6 +59,7 @@ before deleting anything.
 
 | Key | Does |
 | --- | --- |
+| `Space` | Switch between Move and the tool you were drawing with |
 | `v` | Select |
 | `r` | Box |
 | `o` | Circle |
@@ -71,6 +71,5 @@ before deleting anything.
 | `⇧⌘Z` / `Ctrl+Y` | Redo |
 | `⌘↵` | Mark as reviewed |
 | `←` / `→` | Previous or next image |
-| `+` / `-` | Zoom in or out (Compare, and earlier rounds) |
-| `c` | Center the images |
-| `0` | Fit the images on screen |
+| Scroll | Zoom in or out |
+| `0` | Fit the image on screen |

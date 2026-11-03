@@ -1,4 +1,4 @@
-import { ArrowUpRight, Circle, MapPin, MousePointer2, Pencil, Square } from 'lucide-react'
+import { ArrowUpRight, Circle, Hand, MapPin, Maximize, MousePointer2, Pencil, Square } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { COLORS, Marks } from '@/components/marks'
@@ -7,9 +7,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Annotation } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-export type Tool = 'select' | 'rect' | 'ellipse' | 'arrow' | 'pen' | 'pin'
+// 'move' drags the view around instead of drawing; Space switches to it and back.
+export type Tool = 'move' | 'select' | 'rect' | 'ellipse' | 'arrow' | 'pen' | 'pin'
 
 export const TOOLS: { tool: Tool; label: string; key: string; icon: typeof Square }[] = [
+  { tool: 'move', label: 'Move', key: 'space', icon: Hand },
   { tool: 'select', label: 'Select', key: 'v', icon: MousePointer2 },
   { tool: 'rect', label: 'Box', key: 'r', icon: Square },
   { tool: 'ellipse', label: 'Circle', key: 'o', icon: Circle },
@@ -21,13 +23,29 @@ export const TOOLS: { tool: Tool; label: string; key: string; icon: typeof Squar
 const newId = () => Math.random().toString(36).slice(2, 10)
 const clamp = (v: number) => Math.min(Math.max(v, 0), 1)
 
-export function Toolbar({ tool, setTool, color, setColor }: { tool: Tool; setTool: (t: Tool) => void; color: string; setColor: (c: string) => void }) {
+// `drawing` off (Compare, earlier rounds) greys out everything but Move and Fit.
+export function Toolbar({
+  tool,
+  setTool,
+  color,
+  setColor,
+  onFit,
+  drawing = true,
+}: {
+  tool: Tool
+  setTool: (t: Tool) => void
+  color: string
+  setColor: (c: string) => void
+  onFit: () => void
+  drawing?: boolean
+}) {
+  const current = drawing ? tool : 'move'
   return (
     <div className="flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
       {TOOLS.map(({ tool: t, label, key, icon: Icon }) => (
         <Tooltip key={t}>
           <TooltipTrigger asChild>
-            <Button variant={tool === t ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => setTool(t)} aria-label={label}>
+            <Button variant={current === t ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => setTool(t)} aria-label={label} disabled={!drawing && t !== 'move'}>
               <Icon />
             </Button>
           </TooltipTrigger>
@@ -42,10 +60,25 @@ export function Toolbar({ tool, setTool, color, setColor }: { tool: Tool; setToo
           key={c}
           aria-label={`Colour ${c}`}
           onClick={() => setColor(c)}
-          className={cn('size-5 rounded-full border border-border transition-transform', color === c && 'scale-110 ring-2 ring-ring ring-offset-1 ring-offset-background')}
+          disabled={!drawing}
+          className={cn(
+            'size-5 rounded-full border border-border transition-transform disabled:opacity-40',
+            drawing && color === c && 'scale-110 ring-2 ring-ring ring-offset-1 ring-offset-background',
+          )}
           style={{ background: c }}
         />
       ))}
+      <div className="mx-1 h-5 w-px bg-border" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" onClick={onFit} aria-label="Fit">
+            <Maximize />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Fit on screen <span className="text-muted-foreground">0</span>
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }
@@ -61,6 +94,7 @@ export function Annotator({
   tool,
   color,
   onCreated,
+  size,
 }: {
   src: string
   width: number
@@ -72,6 +106,8 @@ export function Annotator({
   tool: Tool
   color: string
   onCreated: (id: string) => void
+  // A fixed size on screen, inside the zoomable canvas.
+  size?: { width: number; height: number }
 }) {
   const svg = useRef<SVGSVGElement>(null)
   const [draft, setDraft] = useState<Annotation | null>(null)
@@ -92,7 +128,9 @@ export function Annotator({
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.button !== 0) return
+    if (tool === 'move') return
     if (tool === 'select') return onSelect(null)
+    event.stopPropagation()
     const [x, y] = toFraction(event)
     start.current = [x, y]
     const base = { id: newId(), color, note: '' }
@@ -129,7 +167,9 @@ export function Annotator({
       ref={svg}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
-      className={cn('size-full touch-none select-none', tool === 'select' ? 'cursor-default' : 'cursor-crosshair')}
+      width={size?.width}
+      height={size?.height}
+      className={cn('block touch-none select-none', !size && 'size-full', tool === 'select' ? 'cursor-default' : tool !== 'move' && 'cursor-crosshair')}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
