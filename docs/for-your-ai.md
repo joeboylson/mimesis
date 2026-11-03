@@ -42,6 +42,31 @@ For each image you marked up, a folder with:
 Add `--json` to `list`, `show`, `inbox`, `pull` or `wait` to get output a
 program can read.
 
+## Folders and preferences
+
+Each folder keeps a short list of how you like things made, distilled from
+the notes in its reviews. Your AI should read it before changing a UI:
+
+```sh
+mimesis folder use "Myserve.ai"     # once per project: link it to a folder
+mimesis prefs                       # then, before each piece of UI work
+```
+
+To keep the list current, your AI reads every note in a folder and saves a
+new list:
+
+```sh
+mimesis folder notes "Myserve.ai"
+mimesis folder prefs "Myserve.ai" --set prefs.md
+```
+
+| Command | Does |
+| --- | --- |
+| `mimesis folder list` | List folders |
+| `mimesis folder new <name>` | Make a folder |
+| `mimesis folder move <review> <folder>` | Put a review in a folder (`none` takes it out) |
+| `mimesis new "Title" a.png --folder <name>` | Start a review in a folder |
+
 ## Over the network
 
 When Mimesis is open, the same things are available at

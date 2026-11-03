@@ -1,4 +1,4 @@
-import { CheckCheck, ImagePlus, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Check, CheckCheck, Folder as FolderIcon, FolderInput, ImagePlus, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -8,10 +8,20 @@ import { MarkedImage } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { moveReview } from '@/components/folders'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
-import { addImages, api, imageUrl, latest, type Item, type ItemState, type Review } from '@/lib/api'
+import { addImages, api, imageUrl, latest, type Folder, type Item, type ItemState, type Review } from '@/lib/api'
 import { go, itemHash } from '@/lib/route'
 import { cn } from '@/lib/utils'
 
@@ -87,6 +97,10 @@ function Title({ review }: { review: Review }) {
 export function ReviewPage({ review }: { review: Review }) {
   const [filter, setFilter] = useFilter(review.id)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [folders, setFolders] = useState<Folder[]>([])
+  useEffect(() => {
+    api.folders().then(setFolders).catch(() => {})
+  }, [review.folder_id])
   const allApproved = review.items.length > 0 && review.items.every((item) => item.state === 'approved')
   const shown = review.items.filter((item) => filter === 'all' || item.state === filter)
   const count = (state: ItemState) => review.items.filter((item) => item.state === state).length
@@ -120,6 +134,25 @@ export function ReviewPage({ review }: { review: Review }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <FolderInput />
+                    Move to folder
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {folders.map((folder) => (
+                      <DropdownMenuItem key={folder.id} onSelect={() => moveReview(review.id, folder)}>
+                        {folder.id === review.folder_id ? <Check /> : <FolderIcon />}
+                        {folder.name}
+                      </DropdownMenuItem>
+                    ))}
+                    {folders.length > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuItem disabled={review.folder_id === null} onSelect={() => moveReview(review.id, null)}>
+                      No folder
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
                   <Trash2 />
                   Delete review

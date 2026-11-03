@@ -13,6 +13,16 @@ like the first one** (same page, size, scale, theme, data, state), so the
 only difference the person sees is your change. So capture from a script you
 can run again, not by hand.
 
+## 0. Read their preferences
+
+```sh
+mimesis prefs          # this project's folder; or: mimesis prefs --folder <name>
+```
+
+If the project isn't linked yet, `mimesis folder list` shows the folders; ask
+which one fits, then `mimesis folder use <name>`. Follow what the preferences
+say while you work, so they don't have to mark the same thing twice.
+
 ## 1. Get the app running
 
 Find how the project starts (README, package.json scripts, Makefile,
@@ -117,7 +127,7 @@ a spinner, a cookie banner or a login wall wastes the person's round.
 ## 3. Hand it to Mimesis
 
 ```sh
-mimesis new "Checkout redesign" .mimesis/shots/*.png --json   # prints the review; note its id
+mimesis new "Checkout redesign" .mimesis/shots/*.png --folder "<folder>" --json   # prints the review; note its id
 mimesis open                                               # optional: opens the page for the person
 ```
 
@@ -185,11 +195,19 @@ Go back to `mimesis wait --review <id>`. You're done when
 code changes as normal; the review keeps every round if anyone wants the
 history.
 
+Once it's finished, update the folder's preferences: read
+`mimesis folder notes <folder>`, fold anything new into the list (short lines,
+plain words, what they want), and save it with
+`mimesis folder prefs <folder> --set prefs.md`. Keep the list short; merge
+repeats rather than adding to the end.
+
 ## Checklist
 
+- [ ] Read `mimesis prefs` first
 - [ ] App running with steady data
 - [ ] `.mimesis/shots.json` covers every screen and state that matters
 - [ ] Looked at every capture before sending
 - [ ] `mimesis new` → review id → told the person
 - [ ] Per round: `wait` → `pull` → look at `marked.png` → fix → `--only` recapture → look → `respond` with a `-r` reply per mark
 - [ ] All items approved
+- [ ] Folder preferences updated from the new notes

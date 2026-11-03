@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { api, type Review, type ReviewSummary } from '@/lib/api'
+import { api, type Folder, type Review, type ReviewSummary } from '@/lib/api'
 
 const POLL_MS = 1500
 
@@ -52,5 +52,7 @@ function useLoaded<T>(load: () => Promise<T>, version: number | null, key: unkno
 }
 
 export const useReviews = (version: number | null) => useLoaded<ReviewSummary[]>(api.reviews, version, 'reviews')
+
+export const useFolders = (version: number | null) => useLoaded<Folder[]>(api.folders, version, 'folders')
 
 export const useReview = (id: number, version: number | null) => useLoaded<Review>(() => api.review(id), version, id)

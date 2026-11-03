@@ -2,11 +2,14 @@ import { ImagePlus } from 'lucide-react'
 import { useState } from 'react'
 
 import { isImage } from '@/lib/api'
+import { REVIEW_DRAG } from '@/components/folders'
 
 // Accepts images dropped anywhere on the page.
+
 export function DropZone({ onFiles, label, children }: { onFiles: (files: File[]) => void; label: string; children: React.ReactNode }) {
   const [over, setOver] = useState(false)
-  const hasFiles = (event: React.DragEvent) => event.dataTransfer.types.includes('Files')
+  // Files from the computer only: a review card being dragged to a folder carries its picture too.
+  const hasFiles = (event: React.DragEvent) => event.dataTransfer.types.includes('Files') && !event.dataTransfer.types.includes(REVIEW_DRAG)
   return (
     <div
       className="relative flex min-h-0 flex-1 flex-col"

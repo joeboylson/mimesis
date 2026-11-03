@@ -13,7 +13,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use rusqlite::{params, Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 
-use crate::model::{Annotation, Item, ItemState, Request, Review, ReviewSummary, Round};
+use crate::model::{Annotation, Folder, FolderNotes, Item, ItemState, NoteEntry, Request, Review, ReviewSummary, Round};
 
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
@@ -45,6 +45,13 @@ CREATE TABLE IF NOT EXISTS rounds (
   sent_at INTEGER,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS folders (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  preferences TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 CREATE INDEX IF NOT EXISTS items_by_review ON items(review_id);
 CREATE INDEX IF NOT EXISTS rounds_by_item ON rounds(item_id, number);
 ";
@@ -75,6 +82,11 @@ impl Store {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.execute_batch(SCHEMA)?;
+        // Stores made before folders existed get the column added in place.
+        let has_folder: bool = conn.query_row("SELECT COUNT(*) FROM pragma_table_info('reviews') WHERE name = 'folder_id'", [], |row| row.get::<_, i64>(0))? > 0;
+        if !has_folder {
+            conn.execute_batch("ALTER TABLE reviews ADD COLUMN folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL;")?;
+        }
         Ok(Store { conn, images })
     }
 
@@ -84,6 +96,115 @@ impl Store {
 
     pub fn version(&self) -> Result<i64> {
         Ok(self.conn.query_row("SELECT value FROM meta WHERE key = 'version'", [], |row| row.get(0))?)
+    }
+
+    // ----- folders
+
+    pub fn folders(&self) -> Result<Vec<Folder>> {
+        let mut statement = self.conn.prepare(
+            "SELECT f.id, f.name, f.preferences, f.created_at, f.updated_at, (SELECT COUNT(*) FROM reviews r WHERE r.folder_id = f.id)
+             FROM folders f ORDER BY f.name COLLATE NOCASE",
+        )?;
+        let folders = statement
+            .query_map([], |row| {
+                Ok(Folder { id: row.get(0)?, name: row.get(1)?, preferences: row.get(2)?, created_at: row.get(3)?, updated_at: row.get(4)?, reviews: row.get(5)? })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(folders)
+    }
+
+    pub fn folder(&self, id: i64) -> Result<Folder> {
+        self.folders()?.into_iter().find(|f| f.id == id).ok_or_else(|| not_found("folder", id))
+    }
+
+    /// A folder by its number or its name (any case).
+    pub fn find_folder(&self, name_or_id: &str) -> Result<Folder> {
+        let wanted = name_or_id.trim();
+        let folders = self.folders()?;
+        let found = match wanted.parse::<i64>() {
+            Ok(id) => folders.into_iter().find(|f| f.id == id),
+            Err(_) => folders.into_iter().find(|f| f.name.eq_ignore_ascii_case(wanted)),
+        };
+        found.ok_or_else(|| anyhow!("no folder called {wanted:?}; `mimesis folder list` shows them"))
+    }
+
+    pub fn create_folder(&self, name: &str) -> Result<Folder> {
+        let name = name.trim();
+        if name.is_empty() {
+            bail!("a folder needs a name");
+        }
+        if self.find_folder(name).is_ok() {
+            bail!("there's already a folder called {name:?}");
+        }
+        let at = now();
+        self.conn.execute("INSERT INTO folders (name, created_at, updated_at) VALUES (?1, ?2, ?2)", params![name, at])?;
+        let id = self.conn.last_insert_rowid();
+        self.bump()?;
+        self.folder(id)
+    }
+
+    pub fn update_folder(&self, id: i64, name: Option<&str>, preferences: Option<&str>) -> Result<Folder> {
+        self.folder(id)?;
+        if let Some(name) = name.map(str::trim).filter(|n| !n.is_empty()) {
+            if self.find_folder(name).is_ok_and(|other| other.id != id) {
+                bail!("there's already a folder called {name:?}");
+            }
+            self.conn.execute("UPDATE folders SET name = ?1, updated_at = ?2 WHERE id = ?3", params![name, now(), id])?;
+        }
+        if let Some(preferences) = preferences {
+            self.conn.execute("UPDATE folders SET preferences = ?1, updated_at = ?2 WHERE id = ?3", params![preferences.trim(), now(), id])?;
+        }
+        self.bump()?;
+        self.folder(id)
+    }
+
+    /// Deleting a folder keeps its reviews; they just stop being in a folder.
+    pub fn delete_folder(&self, id: i64) -> Result<()> {
+        self.folder(id)?;
+        self.conn.execute("UPDATE reviews SET folder_id = NULL WHERE folder_id = ?1", [id])?;
+        self.conn.execute("DELETE FROM folders WHERE id = ?1", [id])?;
+        self.bump()
+    }
+
+    pub fn set_review_folder(&self, review_id: i64, folder_id: Option<i64>) -> Result<()> {
+        self.review_exists(review_id)?;
+        if let Some(id) = folder_id {
+            self.folder(id)?;
+        }
+        self.conn.execute("UPDATE reviews SET folder_id = ?1 WHERE id = ?2", params![folder_id, review_id])?;
+        self.bump()
+    }
+
+    /// Every mark note and overall note in a folder's reviews, oldest first.
+    pub fn folder_notes(&self, id: i64) -> Result<FolderNotes> {
+        let folder = self.folder(id)?;
+        let mut notes = Vec::new();
+        let mut statement = self.conn.prepare("SELECT id, title FROM reviews WHERE folder_id = ?1 ORDER BY created_at, id")?;
+        let reviews = statement.query_map([id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))?.collect::<rusqlite::Result<Vec<_>>>()?;
+        for (review_id, review) in reviews {
+            for item in self.items_of(review_id)? {
+                for round in &item.rounds {
+                    let marks: Vec<String> = round.annotations.iter().map(|a| a.note.trim().to_string()).filter(|n| !n.is_empty()).collect();
+                    if marks.is_empty() && round.note.trim().is_empty() {
+                        continue;
+                    }
+                    notes.push(NoteEntry {
+                        review: review.clone(),
+                        item: item.name.clone(),
+                        round: round.number,
+                        marks,
+                        note: round.note.trim().to_string(),
+                        approved: item.state == ItemState::Approved,
+                    });
+                }
+            }
+        }
+        Ok(FolderNotes { folder: folder.name, preferences: folder.preferences, notes })
+    }
+
+    fn bump(&self) -> Result<()> {
+        self.conn.execute("UPDATE meta SET value = value + 1 WHERE key = 'version'", [])?;
+        Ok(())
     }
 
     fn changed(&self, review_id: i64) -> Result<()> {
@@ -128,17 +249,18 @@ impl Store {
     }
 
     pub fn reviews(&self) -> Result<Vec<ReviewSummary>> {
-        let mut statement = self.conn.prepare("SELECT id, title, created_at, updated_at, archived FROM reviews ORDER BY updated_at DESC, id DESC")?;
+        let mut statement = self.conn.prepare("SELECT id, title, created_at, updated_at, archived, folder_id FROM reviews ORDER BY updated_at DESC, id DESC")?;
         let rows = statement
-            .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get(2)?, row.get(3)?, row.get::<_, bool>(4)?)))?
+            .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get(2)?, row.get(3)?, row.get::<_, bool>(4)?, row.get::<_, Option<i64>>(5)?)))?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         rows.into_iter()
-            .map(|(id, title, created_at, updated_at, archived)| {
+            .map(|(id, title, created_at, updated_at, archived, folder_id)| {
                 let items = self.items_of(id)?;
                 let count = |state| items.iter().filter(|item| item.state == state).count() as i64;
                 Ok(ReviewSummary {
                     id,
                     title,
+                    folder_id,
                     created_at,
                     updated_at,
                     archived,
@@ -155,12 +277,12 @@ impl Store {
     pub fn review(&self, id: i64) -> Result<Review> {
         let found = self
             .conn
-            .query_row("SELECT title, created_at, archived FROM reviews WHERE id = ?1", [id], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?, row.get::<_, bool>(2)?))
+            .query_row("SELECT title, created_at, archived, folder_id FROM reviews WHERE id = ?1", [id], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?, row.get::<_, bool>(2)?, row.get::<_, Option<i64>>(3)?))
             })
             .optional()?;
-        let (title, created_at, archived) = found.ok_or_else(|| not_found("review", id))?;
-        Ok(Review { id, title, created_at, archived, items: self.items_of(id)? })
+        let (title, created_at, archived, folder_id) = found.ok_or_else(|| not_found("review", id))?;
+        Ok(Review { id, title, folder_id, created_at, archived, items: self.items_of(id)? })
     }
 
     fn review_title(&self, id: i64) -> Result<String> {
@@ -454,6 +576,35 @@ mod tests {
         store.approve(item).unwrap();
         assert_eq!(store.item(item).unwrap().state, ItemState::Approved);
         std::fs::remove_dir_all(folder).ok();
+    }
+
+    #[test]
+    fn folders_group_reviews_and_keep_their_own_notes() {
+        let folder_dir = std::env::temp_dir().join(format!("mimesis-folders-{}", std::process::id()));
+        let store = Store::open_at(&folder_dir).unwrap();
+        let work = store.create_folder("Work").unwrap();
+        let personal = store.create_folder("Personal").unwrap();
+        assert!(store.create_folder("work").is_err(), "names are unique, any case");
+        assert_eq!(store.find_folder("WORK").unwrap().id, work.id);
+
+        let a = store.create_review("A").unwrap();
+        let b = store.create_review("B").unwrap();
+        store.set_review_folder(a, Some(work.id)).unwrap();
+        store.set_review_folder(b, Some(personal.id)).unwrap();
+        let item = store.add_image(a, "one.png", &png(10, 10, 0)).unwrap();
+        let round = store.item(item).unwrap().rounds[0].id;
+        store.save_marks(round, &[mark("tables, not lists")], "").unwrap();
+
+        let notes = store.folder_notes(work.id).unwrap();
+        assert_eq!(notes.notes.len(), 1);
+        assert_eq!(notes.notes[0].marks, vec!["tables, not lists"]);
+        assert!(store.folder_notes(personal.id).unwrap().notes.is_empty(), "folders don't share notes");
+
+        store.update_folder(work.id, None, Some("- Tables, not lists")).unwrap();
+        assert_eq!(store.folder(work.id).unwrap().preferences, "- Tables, not lists");
+        store.delete_folder(work.id).unwrap();
+        assert_eq!(store.review(a).unwrap().folder_id, None, "the review stays, outside any folder");
+        std::fs::remove_dir_all(folder_dir).ok();
     }
 
     #[test]

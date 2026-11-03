@@ -67,6 +67,21 @@ how many are waiting, like "(2) Mimesis". The first time you mark something
 as reviewed, your browser asks whether Mimesis may send notifications; say
 yes to get one from your computer while you're in another window.
 
+## Folders
+
+Folders group your reviews, for example one per project. Pick a folder in
+the list on the left of the Reviews page; **All reviews** shows every one.
+Make a folder with the button next to **Folders**. To move a review, drag
+its card onto a folder, or use **Move to folder** in the review's ⋯ menu.
+Rename or delete a folder from the ⋯ next to its name; deleting keeps its
+reviews, outside any folder.
+
+Each folder has **Preferences**: a short list of how you like things made,
+distilled by an AI from the notes in that folder's reviews. AIs read it
+before they start on that kind of work, so you don't have to give the same
+note twice. Open it at the top of the folder to read or edit it. Folders
+don't share preferences, so work and personal projects stay apart.
+
 ## Finishing a review
 
 **Finish review** works once every image is approved. Finished reviews

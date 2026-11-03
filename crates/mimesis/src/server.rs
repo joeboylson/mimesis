@@ -15,7 +15,7 @@ use axum::{
     http::{header, StatusCode, Uri},
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    routing::{get, post, put},
+    routing::{get, patch, post, put},
     Json, Router,
 };
 use rust_embed::RustEmbed;
@@ -61,6 +61,9 @@ pub fn router(store: Shared, port: u16) -> Router {
         .route("/reviews", get(reviews).post(create_review))
         .route("/reviews/{id}", get(review).patch(update_review).delete(delete_review))
         .route("/reviews/{id}/items", post(add_item))
+        .route("/reviews/{id}/folder", put(set_review_folder))
+        .route("/folders", get(folders).post(create_folder))
+        .route("/folders/{id}", patch(update_folder).delete(delete_folder))
         .route("/reviews/{id}/send", post(send_all))
         .route("/items/{id}", get(item).delete(delete_item))
         .route("/items/{id}/send", post(send))
@@ -171,6 +174,38 @@ async fn create_review(State(store): State<Shared>, Json(body): Json<NewReview>)
 
 async fn review(State(store): State<Shared>, Path(id): Path<i64>) -> Reply {
     ok(with_store(store, move |s| s.review(id)).await?)
+}
+
+#[derive(Deserialize)]
+struct FolderBody {
+    name: Option<String>,
+    preferences: Option<String>,
+}
+
+async fn folders(State(store): State<Shared>) -> Reply {
+    ok(with_store(store, |s| s.folders()).await?)
+}
+
+async fn create_folder(State(store): State<Shared>, Json(body): Json<FolderBody>) -> Reply {
+    let name = body.name.unwrap_or_default();
+    ok(with_store(store, move |s| s.create_folder(&name)).await?)
+}
+
+async fn update_folder(State(store): State<Shared>, Path(id): Path<i64>, Json(body): Json<FolderBody>) -> Reply {
+    ok(with_store(store, move |s| s.update_folder(id, body.name.as_deref(), body.preferences.as_deref())).await?)
+}
+
+async fn delete_folder(State(store): State<Shared>, Path(id): Path<i64>) -> Reply {
+    ok(with_store(store, move |s| s.delete_folder(id)).await?)
+}
+
+#[derive(Deserialize)]
+struct ReviewFolder {
+    folder_id: Option<i64>,
+}
+
+async fn set_review_folder(State(store): State<Shared>, Path(id): Path<i64>, Json(body): Json<ReviewFolder>) -> Reply {
+    ok(with_store(store, move |s| s.set_review_folder(id, body.folder_id).and_then(|_| s.review(id))).await?)
 }
 
 #[derive(Deserialize)]

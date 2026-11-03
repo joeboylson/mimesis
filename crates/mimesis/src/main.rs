@@ -32,6 +32,9 @@ enum Cmd {
     New {
         title: String,
         images: Vec<PathBuf>,
+        /// Put it in this folder (name or number)
+        #[arg(long)]
+        folder: Option<String>,
         #[arg(long)]
         json: bool,
     },
@@ -98,8 +101,48 @@ enum Cmd {
     /// Skills that teach an AI to make a kind of image and run it through mimesis
     #[command(subcommand)]
     Skill(SkillCmd),
+    /// Folders group reviews, and each keeps the person's preferences for that kind of work
+    #[command(subcommand)]
+    Folder(FolderCmd),
+    /// Print the person's preferences for this project: read them before making UI changes
+    Prefs {
+        /// The folder to read; by default, the one named in .mimesis/folder here or in a parent
+        #[arg(long)]
+        folder: Option<String>,
+    },
     /// Pull the latest code and reinstall
     Update,
+}
+
+#[derive(Subcommand)]
+enum FolderCmd {
+    /// Every folder, with how many reviews it holds
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Make a folder
+    New { name: String },
+    /// Put a review in a folder ("none" takes it out)
+    Move { review: i64, folder: String },
+    /// Every note the person left in a folder's reviews, for distilling preferences
+    Notes {
+        folder: String,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print a folder's preferences, or save new ones with --set (a file, or - for what's piped in)
+    Prefs {
+        folder: String,
+        #[arg(long, value_name = "FILE")]
+        set: Option<PathBuf>,
+    },
+    /// Link this project to a folder, so `mimesis prefs` here reads that folder
+    Use { folder: String },
+    /// Rename a folder
+    Rename { folder: String, name: String },
+    /// Delete a folder; its reviews stay, outside any folder
+    Delete { folder: String },
 }
 
 #[derive(Subcommand)]
@@ -158,9 +201,13 @@ fn run(cli: Cli) -> Result<()> {
             println!("Mimesis is on {}", paths::address(port));
             tokio::runtime::Runtime::new()?.block_on(server::serve(port))
         }
-        Cmd::New { title, images, json } => {
+        Cmd::New { title, images, folder, json } => {
             let store = Store::open()?;
+            let folder = folder.map(|name| store.find_folder(&name)).transpose()?;
             let id = store.create_review(&title)?;
+            if let Some(folder) = &folder {
+                store.set_review_folder(id, Some(folder.id))?;
+            }
             for path in &images {
                 add(&store, id, path)?;
             }
@@ -241,7 +288,135 @@ fn run(cli: Cli) -> Result<()> {
             Ok(())
         }
         Cmd::Skill(command) => skill(command),
+        Cmd::Folder(command) => folder(command),
+        Cmd::Prefs { folder } => {
+            let store = Store::open()?;
+            let name = match folder {
+                Some(name) => name,
+                None => linked_folder()?.ok_or_else(|| {
+                    anyhow::anyhow!("this project isn't linked to a folder. Run `mimesis folder use <folder>` here, or pass --folder")
+                })?,
+            };
+            let folder = store.find_folder(&name)?;
+            if folder.preferences.trim().is_empty() {
+                println!("No preferences saved for {} yet.", folder.name);
+            } else {
+                println!("How the person likes things made ({}):\n\n{}", folder.name, folder.preferences.trim());
+            }
+            Ok(())
+        }
         Cmd::Update => update(),
+    }
+}
+
+/// The file that links a project to a folder: one line, the folder's name.
+const FOLDER_FILE: &str = ".mimesis/folder";
+
+/// The folder named in .mimesis/folder, here or in the nearest parent folder.
+fn linked_folder() -> Result<Option<String>> {
+    let mut dir = std::env::current_dir()?;
+    loop {
+        let file = dir.join(FOLDER_FILE);
+        if file.is_file() {
+            let name = std::fs::read_to_string(&file)?.trim().to_string();
+            return Ok((!name.is_empty()).then_some(name));
+        }
+        if !dir.pop() {
+            return Ok(None);
+        }
+    }
+}
+
+fn folder(command: FolderCmd) -> Result<()> {
+    let store = Store::open()?;
+    match command {
+        FolderCmd::List { json } => {
+            let folders = store.folders()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&folders)?);
+            } else if folders.is_empty() {
+                println!("No folders yet. Make one: mimesis folder new \"Name\"");
+            } else {
+                for f in folders {
+                    let prefs = if f.preferences.trim().is_empty() { "" } else { "  (has preferences)" };
+                    println!("{:>4}  {}  ({} review{}){prefs}", f.id, f.name, f.reviews, if f.reviews == 1 { "" } else { "s" });
+                }
+            }
+            Ok(())
+        }
+        FolderCmd::New { name } => {
+            let folder = store.create_folder(&name)?;
+            println!("Folder {}: {}", folder.id, folder.name);
+            Ok(())
+        }
+        FolderCmd::Move { review, folder } => {
+            if folder.eq_ignore_ascii_case("none") {
+                store.set_review_folder(review, None)?;
+                println!("Review {review} is out of its folder.");
+            } else {
+                let folder = store.find_folder(&folder)?;
+                store.set_review_folder(review, Some(folder.id))?;
+                println!("Review {review} is in {}.", folder.name);
+            }
+            Ok(())
+        }
+        FolderCmd::Notes { folder, json } => {
+            let notes = store.folder_notes(store.find_folder(&folder)?.id)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&notes)?);
+                return Ok(());
+            }
+            println!("Notes in {} ({} rounds with notes)\n", notes.folder, notes.notes.len());
+            for entry in &notes.notes {
+                let approved = if entry.approved { ", approved" } else { "" };
+                println!("{} / {} (round {}{approved})", entry.review, entry.item, entry.round);
+                for (i, mark) in entry.marks.iter().enumerate() {
+                    println!("  {}. {}", i + 1, mark.replace('\n', "\n     "));
+                }
+                if !entry.note.is_empty() {
+                    println!("  Overall: {}", entry.note.replace('\n', "\n     "));
+                }
+            }
+            if !notes.preferences.trim().is_empty() {
+                println!("\nSaved preferences:\n{}", notes.preferences.trim());
+            }
+            Ok(())
+        }
+        FolderCmd::Prefs { folder, set } => {
+            let folder = store.find_folder(&folder)?;
+            match set {
+                Some(path) => {
+                    let text = if path.as_os_str() == "-" {
+                        std::io::read_to_string(std::io::stdin())?
+                    } else {
+                        std::fs::read_to_string(&path).with_context(|| format!("can't read {}", path.display()))?
+                    };
+                    store.update_folder(folder.id, None, Some(&text))?;
+                    println!("Saved preferences for {}.", folder.name);
+                }
+                None if folder.preferences.trim().is_empty() => println!("No preferences saved for {} yet.", folder.name),
+                None => println!("{}", folder.preferences.trim()),
+            }
+            Ok(())
+        }
+        FolderCmd::Use { folder } => {
+            let folder = store.find_folder(&folder)?;
+            std::fs::create_dir_all(".mimesis")?;
+            std::fs::write(FOLDER_FILE, format!("{}\n", folder.name))?;
+            println!("This project now reads {}'s preferences: `mimesis prefs`.", folder.name);
+            Ok(())
+        }
+        FolderCmd::Rename { folder, name } => {
+            let folder = store.update_folder(store.find_folder(&folder)?.id, Some(&name), None)?;
+            println!("Renamed to {}.", folder.name);
+            Ok(())
+        }
+        FolderCmd::Delete { folder } => {
+            let folder = store.find_folder(&folder)?;
+            store.delete_folder(folder.id)?;
+            println!("Deleted {}; its {} reviews are outside any folder now.", folder.name, folder.reviews);
+            Ok(())
+        }
     }
 }
 
@@ -399,8 +574,13 @@ A review holds images. Each image (an item) goes round by round:
   reviewed       the person finished marking it up; your turn to make a new version
   approved   done
 
+Before you change a UI, read how the person likes things made:
+  mimesis prefs                      the preferences of the folder this project is linked to
+  mimesis prefs --folder <name>      or of a folder you name (mimesis folder list shows them)
+
 For an AI:
-  mimesis new \"Title\" a.png b.png   start a review with images (prints its id)
+  mimesis new \"Title\" a.png b.png --folder <name>
+                                   start a review with images, in that folder (prints its id)
   mimesis add <review> c.png         add more images
   mimesis wait --review <id>         block until the person finishes reviewing something
   mimesis pull --review <id>         save each reviewed item's image with the marks drawn in,
@@ -411,6 +591,14 @@ For an AI:
                                    give one per mark. -n is for anything not about one mark.
   mimesis inbox --json               what's waiting, as JSON
   mimesis show <review>              where every item stands
+
+Folders group reviews (one per project or kind of work) and keep the person's preferences:
+  mimesis folder notes <name>        every note they left in that folder's reviews
+  mimesis folder prefs <name> --set prefs.md
+                                   save a short list distilled from those notes: one line each,
+                                   plain words, what they want rather than what was wrong.
+                                   Update it after a review is finished.
+  mimesis folder use <name>          link this project to a folder, for `mimesis prefs`
 
 Look at marked.png from `mimesis pull`: numbered badges sit on each mark, and the notes are
 listed under the image against those numbers. Make one new image per item, answer each with

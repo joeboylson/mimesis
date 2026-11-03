@@ -117,6 +117,7 @@ impl Item {
 pub struct ReviewSummary {
     pub id: i64,
     pub title: String,
+    pub folder_id: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
     pub archived: bool,
@@ -131,6 +132,7 @@ pub struct ReviewSummary {
 pub struct Review {
     pub id: i64,
     pub title: String,
+    pub folder_id: Option<i64>,
     pub created_at: i64,
     pub archived: bool,
     pub items: Vec<Item>,
@@ -196,4 +198,35 @@ impl Request {
             marks,
         }
     }
+}
+
+/// A group of reviews, such as one per project. `preferences` is a short list
+/// of how the person likes things made, distilled from the notes in its
+/// reviews, for an AI to read before it starts on that kind of work.
+#[derive(Serialize, Clone, Debug)]
+pub struct Folder {
+    pub id: i64,
+    pub name: String,
+    pub preferences: String,
+    pub reviews: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// Every note the person left in one folder, for distilling preferences.
+#[derive(Serialize, Clone, Debug)]
+pub struct FolderNotes {
+    pub folder: String,
+    pub preferences: String,
+    pub notes: Vec<NoteEntry>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct NoteEntry {
+    pub review: String,
+    pub item: String,
+    pub round: i64,
+    pub marks: Vec<String>,
+    pub note: String,
+    pub approved: bool,
 }

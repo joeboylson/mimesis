@@ -38,6 +38,7 @@ export type Item = {
 export type ReviewSummary = {
   id: number
   title: string
+  folder_id: number | null
   created_at: number
   updated_at: number
   archived: boolean
@@ -51,9 +52,21 @@ export type ReviewSummary = {
 export type Review = {
   id: number
   title: string
+  folder_id: number | null
   created_at: number
   archived: boolean
   items: Item[]
+}
+
+// A group of reviews. `preferences` is how the person likes things made,
+// distilled from the notes in its reviews.
+export type Folder = {
+  id: number
+  name: string
+  preferences: string
+  reviews: number
+  created_at: number
+  updated_at: number
 }
 
 export type Skill = {
@@ -92,6 +105,11 @@ export const api = {
   createReview: (title: string) => call<Review>('/reviews', json('POST', { title })),
   updateReview: (id: number, change: { title?: string; archived?: boolean }) => call<Review>(`/reviews/${id}`, json('PATCH', change)),
   deleteReview: (id: number) => call<null>(`/reviews/${id}`, { method: 'DELETE' }),
+  setReviewFolder: (id: number, folderId: number | null) => call<Review>(`/reviews/${id}/folder`, json('PUT', { folder_id: folderId })),
+  folders: () => call<Folder[]>('/folders'),
+  createFolder: (name: string) => call<Folder>('/folders', json('POST', { name })),
+  updateFolder: (id: number, change: { name?: string; preferences?: string }) => call<Folder>(`/folders/${id}`, json('PATCH', change)),
+  deleteFolder: (id: number) => call<null>(`/folders/${id}`, { method: 'DELETE' }),
   addImage: (reviewId: number, file: File) =>
     call<Item>(`/reviews/${reviewId}/items?name=${encodeURIComponent(file.name)}`, { method: 'POST', body: file }),
   sendAll: (reviewId: number) => call<{ sent: number[] }>(`/reviews/${reviewId}/send`, { method: 'POST' }),

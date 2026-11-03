@@ -37,6 +37,10 @@ forth so small changes jump out. Approve it, or mark it up again.
 
 The same steps are on the **Guide** tab in Mimesis.
 
+Group reviews into folders, one per project. Each folder keeps a short list
+of your preferences, distilled from your notes, which your AI reads before it
+starts on that kind of work.
+
 ## Install
 
 **With Docker** (nothing else to install):

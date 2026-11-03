@@ -11,7 +11,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { GuidePage } from '@/components/guide-page'
 import { useArrivals } from '@/hooks/use-arrivals'
 import { useReview, useVersion } from '@/hooks/use-mimesis'
-import { go, reviewHash, useRoute } from '@/lib/route'
+import { go, lastFolderHash, reviewHash, useRoute } from '@/lib/route'
 
 function ReviewRoute({ id, itemId, version }: { id: number; itemId: number | null; version: number | null }) {
   const { data: review, error } = useReview(id, version)
@@ -41,7 +41,7 @@ export default function App() {
             </button>
           )}
           <nav className="ml-4 flex gap-1">
-            <Button variant={route.page === 'reviews' || route.page === 'review' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/')}>
+            <Button variant={route.page === 'reviews' || route.page === 'review' ? 'secondary' : 'ghost'} size="sm" onClick={() => go(lastFolderHash())}>
               Reviews
             </Button>
             <Button variant={route.page === 'skills' ? 'secondary' : 'ghost'} size="sm" onClick={() => go('#/skills')}>
@@ -71,7 +71,7 @@ export default function App() {
           </div>
         )}
         <main className="flex min-h-0 flex-1 flex-col">
-          {route.page === 'reviews' && <ReviewsPage version={version} />}
+          {route.page === 'reviews' && <ReviewsPage version={version} folderId={route.folder} />}
           {route.page === 'skills' && <SkillsPage version={version} />}
           {route.page === 'guide' && <GuidePage />}
           {route.page === 'review' && <ReviewRoute id={route.id} itemId={route.item} version={version} />}
