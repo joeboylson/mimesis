@@ -15,6 +15,12 @@ pub fn port() -> u16 {
     std::env::var("MIMESIS_PORT").ok().and_then(|port| port.parse().ok()).unwrap_or(DEFAULT_PORT)
 }
 
+/// Which network address the server listens on. 127.0.0.1 keeps it to this
+/// machine; Docker sets MIMESIS_LISTEN=0.0.0.0 so the port can be published.
+pub fn listen() -> std::net::IpAddr {
+    std::env::var("MIMESIS_LISTEN").ok().and_then(|ip| ip.parse().ok()).unwrap_or([127, 0, 0, 1].into())
+}
+
 pub fn address(port: u16) -> String {
     format!("http://127.0.0.1:{port}")
 }

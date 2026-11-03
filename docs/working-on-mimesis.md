@@ -10,6 +10,7 @@
 | `skills` | Instructions for AIs, built into the `mimesis` command. See [skills](../skills/README.md). |
 | `guide` | The script that takes the screenshots for the README and the Guide tab. |
 | `docs` | These pages. |
+| `Dockerfile`, `docker-compose.yml` | Running Mimesis in Docker. See [Docker](docker.md). |
 
 The `mimesis` command reads and writes `~/.mimesis` itself, so it works
 whether or not the server is running.
@@ -20,8 +21,10 @@ whether or not the server is running.
 | --- | --- | --- |
 | `MIMESIS_HOME` | `~/.mimesis` | Where reviews and images are kept |
 | `MIMESIS_PORT` | `4620` | The port the server uses |
+| `MIMESIS_LISTEN` | `127.0.0.1` | The network address the server listens on. Docker sets it to `0.0.0.0` so the port can be reached from outside the container. |
 
-The server only answers requests from this computer.
+The server only answers requests addressed to `localhost` or `127.0.0.1`
+on its own port.
 
 ## Installing your changes
 

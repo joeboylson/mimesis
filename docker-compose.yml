@@ -1,0 +1,12 @@
+services:
+  mimesis:
+    build: .
+    container_name: mimesis
+    # Only this computer can reach it. Keep both numbers the same: Mimesis
+    # turns away requests addressed to any other port.
+    ports:
+      - "127.0.0.1:4620:4620"
+    # Your reviews and images, kept between restarts.
+    volumes:
+      - ~/.mimesis:/data
+    restart: unless-stopped

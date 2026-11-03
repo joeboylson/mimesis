@@ -1,0 +1,7 @@
+.git
+target
+web/node_modules
+web/dist
+app/src-tauri/gen
+app/src-tauri/target
+**/.DS_Store

@@ -35,27 +35,33 @@ The same steps are on the **Guide** tab in Mimesis.
 
 ## Install
 
-You need [Rust](https://rustup.rs) and Node 18 or newer.
+**With Docker** (nothing else to install):
+
+```sh
+git clone https://github.com/joeboylson/mimesis.git
+cd mimesis
+docker compose up -d
+```
+
+Then open <http://localhost:4620>. See [Running Mimesis in Docker](docs/docker.md)
+for running commands and updating.
+
+**On your computer** (needs [Rust](https://rustup.rs) and Node 18 or newer,
+and includes the desktop app):
 
 ```sh
 git clone https://github.com/joeboylson/mimesis.git
 cd mimesis
 ./install.sh
-```
-
-This puts the `mimesis` command in `~/.local/bin`. To get the latest
-version later, run `mimesis update`.
-
-## Start
-
-```sh
 mimesis open
 ```
 
-This opens Mimesis in your browser.
+This puts the `mimesis` command in `~/.local/bin` and opens Mimesis in your
+browser. To get the latest version later, run `mimesis update`.
 
 ## More
 
+- [Running Mimesis in Docker](docs/docker.md)
 - [Using Mimesis](docs/using-mimesis.md): marking up, statuses, shortcuts
 - [For your AI](docs/for-your-ai.md): the commands your AI runs
 - [Skills](skills/README.md): ready-made instructions that teach an AI how to work with Mimesis

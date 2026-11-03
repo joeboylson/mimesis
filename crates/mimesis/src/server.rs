@@ -40,7 +40,7 @@ pub fn is_running(port: u16) -> bool {
 
 pub async fn serve(port: u16) -> Result<()> {
     let store = Arc::new(Mutex::new(Store::open()?));
-    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port))).await?;
+    let listener = tokio::net::TcpListener::bind(SocketAddr::new(crate::paths::listen(), port)).await?;
     axum::serve(listener, router(store, port)).with_graceful_shutdown(async { tokio::signal::ctrl_c().await.ok(); }).await?;
     Ok(())
 }
