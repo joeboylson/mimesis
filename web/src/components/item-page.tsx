@@ -152,8 +152,8 @@ function EditRound({
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const [tool, setTool] = useState<Tool>('rect')
-  // The tool to go back to when Space switches Move off again.
-  const beforeMove = useRef<Tool>('rect')
+  // A right drag in progress, which moves around without changing the tool.
+  const [holding, setHolding] = useState(false)
   const [color, setColor] = useState(COLORS[0])
   const [fitKey, setFitKey] = useState(0)
   const drawing = mode === 'mark' || !previous
@@ -263,18 +263,8 @@ function EditRound({
         return
       }
       if (isTyping(event) || event.metaKey || event.ctrlKey || event.altKey) return
-      if (event.code === 'Space') {
-        event.preventDefault()
-        if (!drawing || event.repeat) return
-        if (tool === 'move') setTool(beforeMove.current)
-        else {
-          beforeMove.current = tool
-          setTool('move')
-        }
-        return
-      }
       if (event.key === '0') setFitKey((k) => k + 1)
-      const picked = TOOLS.find((t) => t.key === event.key.toLowerCase())
+      const picked = TOOLS.find((t) => t.key && t.key === event.key.toLowerCase())
       if (picked) {
         setTool(picked.tool)
         setMode('mark')
@@ -292,7 +282,7 @@ function EditRound({
     <>
       <div className="relative min-w-0 flex-1 bg-muted/40">
         <div className="absolute inset-x-0 top-3 z-10 flex justify-center gap-2">
-          <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} onFit={() => setFitKey((k) => k + 1)} drawing={drawing} />
+          <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} onFit={() => setFitKey((k) => k + 1)} drawing={drawing} holding={holding} />
           <div className="flex gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
             <Button variant="ghost" size="icon-sm" aria-label="Undo (⌘Z)" title="Undo (⌘Z)" disabled={!drawing || past.length === 0} onClick={undo}>
               <Undo />
@@ -308,6 +298,7 @@ function EditRound({
             insetTop={40}
             canDrag={tool === 'move'}
             fitKey={fitKey}
+            onHolding={setHolding}
             panels={[
               {
                 src: imageUrl(round.image),

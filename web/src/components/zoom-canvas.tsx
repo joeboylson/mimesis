@@ -30,7 +30,9 @@ const close = (a: View, b: View) => Math.abs(a.zoom - b.zoom) < a.zoom * 0.001 &
 // Images side by side on one surface: scroll to zoom, drag to move around.
 // They move as one, so the same spot in each stays lined up.
 //
-// `canDrag` is off while a drawing tool is picked, so a drag draws instead.
+// `canDrag` is off while a drawing tool is picked, so a left drag draws
+// instead. A right drag always moves around; `onHolding` reports it so the
+// toolbar can show the hand while it lasts.
 // Changing `fitKey` fits the images back on screen.
 //
 // Smoothness: while the view moves, the drawn images are only shifted and
@@ -42,12 +44,14 @@ export function ZoomCanvas({
   insetTop = 0,
   canDrag = true,
   fitKey = 0,
+  onHolding,
 }: {
   panels: Panel[]
   className?: string
   insetTop?: number
   canDrag?: boolean
   fitKey?: number
+  onHolding?: (holding: boolean) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
   const layer = useRef<HTMLDivElement>(null)
@@ -190,11 +194,20 @@ export function ZoomCanvas({
     return () => el.removeEventListener('wheel', onWheel)
   }, [moveTo])
 
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (!canDrag || event.button !== 0) return
+  const startDrag = (event: React.PointerEvent) => {
     drag.current = { x: event.clientX, y: event.clientY }
     setDragging(true)
     ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  }
+  // Right button: take the press before the image can draw with it.
+  const onPointerDownCapture = (event: React.PointerEvent) => {
+    if (event.button !== 2) return
+    event.stopPropagation()
+    startDrag(event)
+    onHolding?.(true)
+  }
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (canDrag && event.button === 0) startDrag(event)
   }
   const onPointerMove = (event: React.PointerEvent) => {
     const start = drag.current
@@ -213,6 +226,7 @@ export function ZoomCanvas({
     if (!drag.current) return
     drag.current = null
     setDragging(false)
+    onHolding?.(false)
     redrawSoon()
   }
 
@@ -226,13 +240,15 @@ export function ZoomCanvas({
   return (
     <div
       ref={box}
-      className={cn('relative touch-none overflow-hidden select-none', canDrag && (dragging ? 'cursor-grabbing' : 'cursor-grab'), className)}
+      className={cn('relative touch-none overflow-hidden select-none', dragging ? 'cursor-grabbing' : canDrag && 'cursor-grab', className)}
+      onContextMenu={(event) => event.preventDefault()}
+      onPointerDownCapture={onPointerDownCapture}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div ref={layer} className="absolute inset-0 origin-top-left">
+      <div ref={layer} className={cn('absolute inset-0 origin-top-left', dragging && '[&_*]:cursor-grabbing!')}>
         {view &&
           placed.map(({ panel, at }) => (
             <div key={panel.src} className="absolute" style={{ left: view.x + at * view.zoom, top: view.y - caption }}>

@@ -7,11 +7,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Annotation } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-// 'move' drags the view around instead of drawing; Space switches to it and back.
+// 'move' drags the view around with the left button. A right drag moves it with any tool.
 export type Tool = 'move' | 'select' | 'rect' | 'ellipse' | 'arrow' | 'pen' | 'pin'
 
 export const TOOLS: { tool: Tool; label: string; key: string; icon: typeof Square }[] = [
-  { tool: 'move', label: 'Move', key: 'space', icon: Hand },
+  { tool: 'move', label: 'Move', key: '', icon: Hand },
   { tool: 'select', label: 'Select', key: 'v', icon: MousePointer2 },
   { tool: 'rect', label: 'Box', key: 'r', icon: Square },
   { tool: 'ellipse', label: 'Circle', key: 'o', icon: Circle },
@@ -24,6 +24,8 @@ const newId = () => Math.random().toString(36).slice(2, 10)
 const clamp = (v: number) => Math.min(Math.max(v, 0), 1)
 
 // `drawing` off (Compare, earlier rounds) greys out everything but Move and Fit.
+// `holding` is a right drag in progress: the hand shows as picked and the
+// rest fades until the button is let go.
 export function Toolbar({
   tool,
   setTool,
@@ -31,6 +33,7 @@ export function Toolbar({
   setColor,
   onFit,
   drawing = true,
+  holding = false,
 }: {
   tool: Tool
   setTool: (t: Tool) => void
@@ -38,19 +41,33 @@ export function Toolbar({
   setColor: (c: string) => void
   onFit: () => void
   drawing?: boolean
+  holding?: boolean
 }) {
-  const current = drawing ? tool : 'move'
+  const current = drawing && !holding ? tool : 'move'
+  const faded = holding && 'opacity-50'
   return (
     <div className="flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-sm backdrop-blur">
       {TOOLS.map(({ tool: t, label, key, icon: Icon }) => (
         <Tooltip key={t}>
           <TooltipTrigger asChild>
-            <Button variant={current === t ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => setTool(t)} aria-label={label} disabled={!drawing && t !== 'move'}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setTool(t)}
+              aria-label={label}
+              aria-pressed={current === t}
+              disabled={!drawing && t !== 'move'}
+              className={cn(
+                'relative',
+                current === t && 'after:absolute after:inset-x-1.5 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-foreground',
+                t !== 'move' && faded,
+              )}
+            >
               <Icon />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {label} <span className="text-muted-foreground uppercase">{key}</span>
+            {label} {key ? <span className="text-muted-foreground uppercase">{key}</span> : <span className="text-muted-foreground">or right-click and drag</span>}
           </TooltipContent>
         </Tooltip>
       ))}
@@ -63,6 +80,7 @@ export function Toolbar({
           disabled={!drawing}
           className={cn(
             'size-5 rounded-full border border-border transition-transform disabled:opacity-40',
+            faded,
             drawing && color === c && 'scale-110 ring-2 ring-ring ring-offset-1 ring-offset-background',
           )}
           style={{ background: c }}
@@ -71,7 +89,7 @@ export function Toolbar({
       <div className="mx-1 h-5 w-px bg-border" />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" onClick={onFit} aria-label="Fit">
+          <Button variant="ghost" size="icon-sm" onClick={onFit} aria-label="Fit" className={cn(faded)}>
             <Maximize />
           </Button>
         </TooltipTrigger>

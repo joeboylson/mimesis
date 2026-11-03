@@ -23,8 +23,9 @@ show only the images with that status. Mimesis remembers the tab you picked.
 ## Marking up an image
 
 Open an image and draw on it. Each mark gets a number and a note box on the
-right. Scroll to zoom in or out. To move around, pick **Move** (the hand)
-or press Space, then drag; press Space again to go back to drawing. Write what should change at that spot. Use **Overall note** for
+right. Scroll to zoom in or out. To move around, right-click and drag: you go
+back to the tool you were using when you let go. Or pick **Move** (the
+hand) and drag with the left button. Write what should change at that spot. Use **Overall note** for
 anything that isn't about one spot.
 
 Everything saves as you go.
@@ -59,7 +60,6 @@ before deleting anything.
 
 | Key | Does |
 | --- | --- |
-| `Space` | Switch between Move and the tool you were drawing with |
 | `v` | Select |
 | `r` | Box |
 | `o` | Circle |
@@ -72,4 +72,5 @@ before deleting anything.
 | `⌘↵` | Mark as reviewed |
 | `←` / `→` | Previous or next image |
 | Scroll | Zoom in or out |
+| Right-click and drag | Move around, with any tool |
 | `0` | Fit the image on screen |
