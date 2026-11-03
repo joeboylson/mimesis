@@ -391,7 +391,6 @@ function EditRound({
                 </div>
                 <Textarea
                   rows={2}
-                  placeholder="Anything that isn't about one spot"
                   value={note}
                   onChange={(e) => change(annotations, e.target.value, 'overall')}
                   className="min-h-0 resize-none text-sm"
