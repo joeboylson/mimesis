@@ -31,7 +31,7 @@ docker exec mimesis mimesis guide
 ```sh
 docker exec mimesis mimesis pull --review 1 --out /root/.mimesis/pull    # lands in ~/.mimesis/pull
 cp new.png ~/.mimesis/new.png
-docker exec mimesis mimesis respond 12 /root/.mimesis/new.png -n "1: made the button green"
+docker exec mimesis mimesis respond 12 /root/.mimesis/new.png -r "1=Made the button green"
 ```
 
 Your AI can also skip the command and talk to Mimesis over the network.

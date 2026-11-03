@@ -167,11 +167,14 @@ for the visible text near it.
 4. Answer the item:
 
 ```sh
-mimesis respond <item_id> .mimesis/shots/login-desktop.png -n "1: widened the input to 480px. 2: button uses --brand-green. Overall: 24px more padding on the card."
+mimesis respond <item_id> .mimesis/shots/login-desktop.png \
+  -r "1=Widened the input to 480px" -r "2=Button uses --brand-green" \
+  -n "Also added 24px more padding on the card."
 ```
 
-Keep the note short and numbered to match their marks, so they can check
-each one off. A fix that touched shared code may change other shots too:
+Give one `-r` per mark, numbered to match: each reply shows under that
+mark's note, so they can check them off one at a time. Keep them short. Use
+`-n` only for anything that isn't about one mark. A fix that touched shared code may change other shots too:
 recapture and respond to those as well (with a note saying why) rather than
 let them go stale.
 
@@ -188,5 +191,5 @@ history.
 - [ ] `.mimesis/shots.json` covers every screen and state that matters
 - [ ] Looked at every capture before sending
 - [ ] `mimesis new` → review id → told the person
-- [ ] Per round: `wait` → `pull` → look at `marked.png` → fix → `--only` recapture → look → `respond -n` with numbered notes
+- [ ] Per round: `wait` → `pull` → look at `marked.png` → fix → `--only` recapture → look → `respond` with a `-r` reply per mark
 - [ ] All items approved

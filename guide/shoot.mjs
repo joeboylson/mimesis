@@ -186,7 +186,7 @@ async function main() {
     console.log(join(OUT, '3-ai-pulls.png'))
 
     // 4. It answers with a new version, which you compare with your marks.
-    mimesis('respond', String(signUpItem.id), after, '-n', '1: button is brand green now.\n2: heading bumped to 26px.\n3: added the forgot-password link.')
+    mimesis('respond', String(signUpItem.id), after, '-r', '1=The button is brand green now.', '-r', '2=Bumped the heading to 26px.', '-r', '3=Added the forgot-password link.')
     await shoot('4-compare', `#/r/${review.id}/${signUpItem.id}`, 'text=your marks', async (page) => {
       await page.waitForSelector("[aria-label='Box']")
       await page.keyboard.press('Backslash')

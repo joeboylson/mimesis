@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { GuidePage } from '@/components/guide-page'
+import { useArrivals } from '@/hooks/use-arrivals'
 import { useReview, useVersion } from '@/hooks/use-mimesis'
 import { go, reviewHash, useRoute } from '@/lib/route'
 
@@ -24,6 +25,7 @@ function ReviewRoute({ id, itemId, version }: { id: number; itemId: number | nul
 export default function App() {
   const route = useRoute()
   const { version, online, otherFolder } = useVersion()
+  useArrivals(version)
 
   return (
     <TooltipProvider>

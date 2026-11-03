@@ -309,13 +309,25 @@ impl Store {
     }
 
     /// A new version of the image, which starts the next round.
-    pub fn respond(&self, item_id: i64, bytes: &[u8], note: &str) -> Result<Round> {
+    /// Answers an item with a new image. `replies` answer the person's marks
+    /// one by one, by number (1 is the first mark), and show under each note.
+    pub fn respond(&self, item_id: i64, bytes: &[u8], note: &str, replies: &[(usize, String)]) -> Result<Round> {
         let item = self.item(item_id)?;
         if item.state == ItemState::Approved {
             bail!("item {item_id} is already approved");
         }
-        let (file, width, height) = self.save_image(bytes)?;
         let latest = item.latest();
+        if !replies.is_empty() {
+            let mut marks = latest.annotations.clone();
+            for (number, reply) in replies {
+                let count = marks.len();
+                let mark = number.checked_sub(1).and_then(|i| marks.get_mut(i));
+                let Some(mark) = mark else { bail!("there's no mark {number}: round {} has {count}", latest.number) };
+                mark.reply = reply.trim().to_string();
+            }
+            self.conn.execute("UPDATE rounds SET annotations = ?1 WHERE id = ?2", params![serde_json::to_string(&marks)?, latest.id])?;
+        }
+        let (file, width, height) = self.save_image(bytes)?;
         if latest.sent_at.is_none() {
             // Answering without being asked: close the open round so it reads as sent.
             self.conn.execute("UPDATE rounds SET sent_at = ?1 WHERE id = ?2", params![now(), latest.id])?;
@@ -410,7 +422,7 @@ mod tests {
     }
 
     fn mark(note: &str) -> Annotation {
-        Annotation { id: "a".into(), color: "#ef4444".into(), note: note.into(), shape: Shape::Rect { x: 0.1, y: 0.1, w: 0.5, h: 0.5 } }
+        Annotation { id: "a".into(), color: "#ef4444".into(), note: note.into(), reply: String::new(), shape: Shape::Rect { x: 0.1, y: 0.1, w: 0.5, h: 0.5 } }
     }
 
     #[test]
@@ -431,8 +443,10 @@ mod tests {
         assert_eq!(inbox.len(), 1);
         assert_eq!(inbox[0].marks[0].area, [4, 2, 24, 12]);
 
-        let next = store.respond(item, &png(40, 20, 200), "made it bigger").unwrap();
+        assert!(store.respond(item, &png(40, 20, 200), "", &[(2, "no such mark".into())]).is_err());
+        let next = store.respond(item, &png(40, 20, 200), "made it bigger", &[(1, "Doubled it".into())]).unwrap();
         assert_eq!(next.number, 2);
+        assert_eq!(store.round(round).unwrap().annotations[0].reply, "Doubled it");
         let after = store.item(item).unwrap();
         assert_eq!(after.state, ItemState::NeedsReview);
         assert!(store.inbox(None).unwrap().is_empty());

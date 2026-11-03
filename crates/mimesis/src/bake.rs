@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn marks_without_notes_keep_the_image_size() {
-        let marks = vec![Annotation { id: "a".into(), color: "#ef4444".into(), note: String::new(), shape: Shape::Rect { x: 0.1, y: 0.1, w: 0.3, h: 0.3 } }];
+        let marks = vec![Annotation { id: "a".into(), color: "#ef4444".into(), note: String::new(), reply: String::new(), shape: Shape::Rect { x: 0.1, y: 0.1, w: 0.3, h: 0.3 } }];
         let baked = image::load_from_memory(&bake(&png(), &round(marks, "")).unwrap()).unwrap();
         assert_eq!((baked.width(), baked.height()), (200, 100));
     }
@@ -286,8 +286,8 @@ mod tests {
     #[test]
     fn notes_add_a_strip_below() {
         let marks = vec![
-            Annotation { id: "a".into(), color: "#22c55e".into(), note: "make this a lot bigger please".into(), shape: Shape::Arrow { x1: 0.1, y1: 0.1, x2: 0.8, y2: 0.8 } },
-            Annotation { id: "b".into(), color: "#3b82f6".into(), note: "and this".into(), shape: Shape::Pen { points: vec![[0.2, 0.2], [0.3, 0.4]] } },
+            Annotation { id: "a".into(), color: "#22c55e".into(), note: "make this a lot bigger please".into(), reply: String::new(), shape: Shape::Arrow { x1: 0.1, y1: 0.1, x2: 0.8, y2: 0.8 } },
+            Annotation { id: "b".into(), color: "#3b82f6".into(), note: "and this".into(), reply: String::new(), shape: Shape::Pen { points: vec![[0.2, 0.2], [0.3, 0.4]] } },
         ];
         let baked = image::load_from_memory(&bake(&png(), &round(marks, "overall: warmer")).unwrap()).unwrap();
         assert_eq!(baked.width(), 200);

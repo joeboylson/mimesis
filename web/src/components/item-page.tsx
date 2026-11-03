@@ -1,8 +1,10 @@
-import { ArrowLeft, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, MoreHorizontal, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Bot, Check, CheckCheck, ChevronLeft, ChevronRight, Columns2, MessageSquare, MoreHorizontal, Redo, RotateCcw, Trash2, Undo, Undo2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Annotator, PICKED, TOOLS, Toolbar, type Tool } from '@/components/annotator'
+import { CompareBar, CompareCanvas, type CompareView } from '@/components/compare-views'
+import { askToNotify } from '@/hooks/use-arrivals'
 import { ConfirmDelete } from '@/components/confirm-delete'
 import { COLORS } from '@/components/marks'
 import { StateBadge } from '@/components/state-badge'
@@ -91,9 +93,17 @@ function ReadOnlyMarks({ round }: { round: Round }) {
   return (
     <div className="grid gap-3">
       {round.annotations.map((a, i) => (
-        <div key={a.id} className="flex gap-2 text-sm">
-          <NumberDot number={i + 1} color={a.color} />
-          <span className={cn(!a.note.trim() && 'text-muted-foreground')}>{a.note.trim() || KIND_LABELS[a.kind]}</span>
+        <div key={a.id} className="grid gap-1.5 text-sm">
+          <div className="flex gap-2">
+            <NumberDot number={i + 1} color={a.color} />
+            <span className={cn(!a.note.trim() && 'text-muted-foreground')}>{a.note.trim() || KIND_LABELS[a.kind]}</span>
+          </div>
+          {a.reply?.trim() && (
+            <div className="ml-7 flex gap-2 text-muted-foreground">
+              <Bot className="mt-0.5 size-4 shrink-0" aria-label="The AI's reply" />
+              <span className="whitespace-pre-wrap">{a.reply}</span>
+            </div>
+          )}
         </div>
       ))}
       {round.note.trim() && <p className="border-t pt-3 text-sm whitespace-pre-wrap">{round.note}</p>}
@@ -142,6 +152,9 @@ function EditRound({
   const [color, setColor] = useState(COLORS[0])
   const [fitKey, setFitKey] = useState(0)
   const drawing = mode === 'mark' || !previous
+  const [compareView, setCompareView] = useState<CompareView>('side')
+  const [opacity, setOpacity] = useState(0.5)
+  const [flickerMs, setFlickerMs] = useState(400)
   const pending = useRef<{ annotations: Annotation[]; note: string } | null>(null)
   // Undo history of the marks. Typing in one mark's note counts as one step.
   const [past, setPast] = useState<Snapshot[]>([])
@@ -209,6 +222,7 @@ function EditRound({
       await flush()
       await api.send(item.id)
       toast.success(`Marked ${item.name} as reviewed`)
+      askToNotify()
       goNext(review, item)
     } catch (e) {
       toast.error((e as Error).message)
@@ -292,6 +306,11 @@ function EditRound({
             </Button>
           </div>
         </div>
+        {!drawing && (
+          <div className="absolute inset-x-0 top-15 z-10 flex justify-center">
+            <CompareBar view={compareView} setView={setCompareView} opacity={opacity} setOpacity={setOpacity} flickerMs={flickerMs} setFlickerMs={setFlickerMs} />
+          </div>
+        )}
         {drawing ? (
           <ZoomCanvas
             className={cn('absolute inset-0', pager && 'bottom-14')}
@@ -324,14 +343,16 @@ function EditRound({
             ]}
           />
         ) : (
-          <ZoomCanvas
+          <CompareCanvas
             className={cn('absolute inset-0', pager && 'bottom-14')}
-            insetTop={40}
+            insetTop={92}
             fitKey={fitKey}
-            panels={[
-              { caption: `Round ${previous.number}: your marks`, src: imageUrl(previous.image), width: previous.width, height: previous.height, annotations: previous.annotations },
-              { caption: `Round ${round.number}: new version`, src: imageUrl(round.image), width: round.width, height: round.height, annotations },
-            ]}
+            previous={previous}
+            round={round}
+            annotations={annotations}
+            view={compareView}
+            opacity={opacity}
+            flickerMs={flickerMs}
           />
         )}
         {pager}

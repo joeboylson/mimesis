@@ -10,8 +10,12 @@ AI to read.
 mimesis new "Sign-up screen" a.png b.png    # start a review; prints its number
 mimesis wait --review 3                     # wait until you've marked something up
 mimesis pull --review 3                     # save what you marked to a folder
-mimesis respond 12 new.png -n "1: made the button green"   # send a new version of image 12
+mimesis respond 12 new.png -r "1=Made the button green"   # send a new version of image 12
 ```
+
+`-r` answers one of your marks by its number, and shows under that mark's
+note. Your AI gives one per mark. `-n` adds a note that isn't about one
+mark.
 
 Then it runs `mimesis wait` again, until you've approved every image.
 
@@ -45,8 +49,8 @@ When Mimesis is open, the same things are available at
 
 - `GET /api/inbox`: images waiting for a new version
 - `GET /api/rounds/<id>/baked.png`: an image with its marks drawn on it
-- `POST /api/items/<id>/respond?note=…`: send a new version, with the
-  image as the body
+- `POST /api/items/<id>/respond?note=…&replies={"1":"…"}`: send a new
+  version, with the image as the body. `replies` answers marks by number.
 
 ## Skills
 

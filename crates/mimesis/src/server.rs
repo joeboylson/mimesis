@@ -228,11 +228,18 @@ async fn reopen(State(store): State<Shared>, Path(id): Path<i64>) -> Reply {
 #[derive(Deserialize)]
 struct Answer {
     note: Option<String>,
+    /// Answers to the person's marks, as JSON: {"1": "Made it green"}.
+    replies: Option<String>,
 }
 
 async fn respond(State(store): State<Shared>, Path(id): Path<i64>, Query(query): Query<Answer>, body: Bytes) -> Reply {
     let note = query.note.unwrap_or_default();
-    ok(with_store(store, move |s| s.respond(id, &body, &note)).await?)
+    let replies: std::collections::BTreeMap<usize, String> = match &query.replies {
+        Some(json) => serde_json::from_str(json).map_err(|e| anyhow::anyhow!("replies should be JSON like {{\"1\": \"Made it green\"}}: {e}"))?,
+        None => Default::default(),
+    };
+    let replies: Vec<_> = replies.into_iter().collect();
+    ok(with_store(store, move |s| s.respond(id, &body, &note, &replies)).await?)
 }
 
 async fn request(State(store): State<Shared>, Path(id): Path<i64>) -> Reply {

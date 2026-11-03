@@ -77,6 +77,9 @@ enum Cmd {
         /// What changed, shown to the person beside the new image
         #[arg(long, short, default_value = "")]
         note: String,
+        /// An answer to one of the person's marks, by its number: -r "1=Made it green". Repeat for each mark.
+        #[arg(long = "reply", short = 'r', value_name = "N=TEXT")]
+        replies: Vec<String>,
     },
     /// Wait until the person finishes reviewing something, then list it
     Wait {
@@ -135,6 +138,13 @@ fn main() {
         eprintln!("mimesis: {error:#}");
         std::process::exit(1);
     }
+}
+
+/// "2=Made it green" (or "2: Made it green") → (2, "Made it green").
+fn parse_reply(text: &str) -> Result<(usize, String)> {
+    let split = text.find(['=', ':']).ok_or_else(|| anyhow::anyhow!("a reply looks like 2=\"Made it green\", got {text:?}"))?;
+    let number = text[..split].trim().parse().with_context(|| format!("a reply starts with the mark's number, got {text:?}"))?;
+    Ok((number, text[split + 1..].trim().to_string()))
 }
 
 fn run(cli: Cli) -> Result<()> {
@@ -200,9 +210,10 @@ fn run(cli: Cli) -> Result<()> {
             print_requests(&requests, json)
         }
         Cmd::Pull { items, review, out, json } => pull(items, review, out, json),
-        Cmd::Respond { item, image, note } => {
+        Cmd::Respond { item, image, note, replies } => {
             let bytes = std::fs::read(&image).with_context(|| format!("can't read {}", image.display()))?;
-            let round = Store::open()?.respond(item, &bytes, &note)?;
+            let replies = replies.iter().map(|reply| parse_reply(reply)).collect::<Result<Vec<_>>>()?;
+            let round = Store::open()?.respond(item, &bytes, &note, &replies)?;
             println!("Item {item} is on round {}, ready for review.", round.number);
             Ok(())
         }
@@ -394,14 +405,16 @@ For an AI:
   mimesis wait --review <id>         block until the person finishes reviewing something
   mimesis pull --review <id>         save each reviewed item's image with the marks drawn in,
                                    plus request.json (every mark's note and pixel area)
-  mimesis respond <item> new.png -n \"what changed\"
-                                   answer with a new image; the person sees it beside the last one
+  mimesis respond <item> new.png -r \"1=Made it green\" -r \"2=Bumped to 26px\" -n \"anything else\"
+                                   answer with a new image; the person sees it beside the last one.
+                                   -r answers one mark by its number and shows under that mark's note;
+                                   give one per mark. -n is for anything not about one mark.
   mimesis inbox --json               what's waiting, as JSON
   mimesis show <review>              where every item stands
 
 Look at marked.png from `mimesis pull`: numbered badges sit on each mark, and the notes are
 listed under the image against those numbers. Make one new image per item, answer each with
-`mimesis respond`, then `mimesis wait` again. Items the person approves drop out.
+`mimesis respond` (a -r reply for every mark), then `mimesis wait` again. Items the person approves drop out.
 
 Skills: step-by-step guides for a kind of image (UI screenshots, …), including the loop above.
   mimesis skill list                 what's available
@@ -413,4 +426,4 @@ For a person:
   mimesis update                     pull the latest code and reinstall
 
 HTTP, on http://127.0.0.1:4620 (MIMESIS_PORT): GET /api/inbox, GET /api/rounds/<id>/baked.png,
-POST /api/items/<id>/respond?note=… with the image as the body.";
+POST /api/items/<id>/respond?note=…&replies={\"1\":\"…\"} with the image as the body.";

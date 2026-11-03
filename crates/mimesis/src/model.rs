@@ -8,6 +8,9 @@ pub struct Annotation {
     pub color: String,
     #[serde(default)]
     pub note: String,
+    /// The AI's answer to this mark, set when it sends the next version.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub reply: String,
     #[serde(flatten)]
     pub shape: Shape,
 }

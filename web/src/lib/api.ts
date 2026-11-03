@@ -7,7 +7,8 @@ export type Shape =
   | { kind: 'pen'; points: [number, number][] }
   | { kind: 'pin'; x: number; y: number }
 
-export type Annotation = Shape & { id: string; color: string; note: string }
+// `reply` is the AI's answer to the mark, added when it sends the next version.
+export type Annotation = Shape & { id: string; color: string; note: string; reply?: string }
 
 export type ItemState = 'needs_review' | 'reviewed' | 'approved'
 
