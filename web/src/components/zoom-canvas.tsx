@@ -146,7 +146,9 @@ export function ZoomCanvas({
     setView(next)
   }, [fitted])
 
-  const key = panels.map((p) => p.src).join('|')
+  // Two rounds can share one image file (the same image sent back), so the
+  // panels are told apart by position, not by file.
+  const key = `${panels.length}:${panels.map((p) => p.src).join('|')}`
   useLayoutEffect(() => {
     touched.current = false
     snapToFit()
@@ -250,8 +252,8 @@ export function ZoomCanvas({
     >
       <div ref={layer} className={cn('absolute inset-0 origin-top-left', dragging && '[&_*]:cursor-grabbing!')}>
         {view &&
-          placed.map(({ panel, at }) => (
-            <div key={panel.src} className="absolute" style={{ left: view.x + at * view.zoom, top: view.y - caption }}>
+          placed.map(({ panel, at }, index) => (
+            <div key={index} className="absolute" style={{ left: view.x + at * view.zoom, top: view.y - caption }}>
               {panel.caption && (
                 <div className="h-7 truncate text-xs text-muted-foreground" style={{ width: Math.max(panel.width * view.zoom, 120) }}>
                   {panel.caption}
